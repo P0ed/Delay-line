@@ -3,7 +3,6 @@ import CoreAudioKit
 import AVFoundation
 import UIKit
 
-/// Wraps and Audio Unit extension and provides helper functions.
 extension AVAudioUnit {
 
     var wantsAudioInput: Bool {
@@ -12,23 +11,22 @@ extension AVAudioUnit {
     }
 
     static fileprivate func findComponent(type: String, subType: String, manufacturer: String) -> AVAudioUnitComponent? {
-        // Make a component description matching any Audio Unit of the selected component type.
-        let description = AudioComponentDescription(componentType: type.fourCharCode!,
-                                                    componentSubType: subType.fourCharCode!,
-                                                    componentManufacturer: manufacturer.fourCharCode!,
-                                                    componentFlags: 0,
-                                                    componentFlagsMask: 0)
+		let description = AudioComponentDescription(
+			componentType: type.fourCharCode!,
+			componentSubType: subType.fourCharCode!,
+			componentManufacturer: manufacturer.fourCharCode!,
+			componentFlags: 0,
+			componentFlagsMask: 0
+		)
         return AVAudioUnitComponentManager.shared().components(matching: description).first
     }
 
     fileprivate func loadAudioUnitViewController(completion: @escaping (UIViewController?) -> Void) {
-        auAudioUnit.requestViewController { controller in
-            DispatchQueue.main.async {
-				let controller = AUGenericViewController()
-				controller.auAudioUnit = self.auAudioUnit
-				completion(controller)
-			}
-        }
+		DispatchQueue.main.async {
+			let controller = AUGenericViewController()
+			controller.auAudioUnit = self.auAudioUnit
+			completion(controller)
+		}
     }
 }
 

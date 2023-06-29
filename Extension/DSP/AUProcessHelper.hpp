@@ -6,32 +6,27 @@
 #include <vector>
 #include "DSPKernel.hpp"
 
-class AUProcessHelper
-{
+class AUProcessHelper {
 public:
     AUProcessHelper(DSPKernel& kernel, UInt32 inputChannelCount, UInt32 outputChannelCount)
     : mKernel{kernel},
     mInputBuffers(inputChannelCount),
-    mOutputBuffers(outputChannelCount) {
-    }
+    mOutputBuffers(outputChannelCount) {}
 
-    /**
-     This function handles the event list processing and rendering loop for you.
-     Call it inside your internalRenderBlock.
-     */
-    void processWithEvents(AudioBufferList* inBufferList, AudioBufferList* outBufferList, AudioTimeStamp const *timestamp, AUAudioFrameCount frameCount, AURenderEvent const *events) {
+    void processWithEvents(AudioBufferList *inBufferList, AudioBufferList *outBufferList, AudioTimeStamp const *timestamp, AUAudioFrameCount frameCount, AURenderEvent const *events) {
 
         AUEventSampleTime now = AUEventSampleTime(timestamp->mSampleTime);
         AUAudioFrameCount framesRemaining = frameCount;
         AURenderEvent const *nextEvent = events; // events is a linked list, at the beginning, the nextEvent is the first event
 
-        auto callProcess = [this] (AudioBufferList* inBufferListPtr, AudioBufferList* outBufferListPtr, AUEventSampleTime now, AUAudioFrameCount frameCount, AUAudioFrameCount const frameOffset) {
-            for (int channel = 0; channel < inBufferListPtr->mNumberBuffers; ++channel) {
-                mInputBuffers[channel] = (const float*)inBufferListPtr->mBuffers[channel].mData  + frameOffset;
+        auto callProcess = [this] (AudioBufferList *inBufferListPtr, AudioBufferList *outBufferListPtr, AUEventSampleTime now, AUAudioFrameCount frameCount, AUAudioFrameCount const frameOffset) {
+
+			for (int channel = 0; channel < inBufferListPtr->mNumberBuffers; ++channel) {
+                mInputBuffers[channel] = (const float*)inBufferListPtr->mBuffers[channel].mData + frameOffset;
             }
             
             for (int channel = 0; channel < outBufferListPtr->mNumberBuffers; ++channel) {
-                mOutputBuffers[channel] = (float*)outBufferListPtr->mBuffers[channel].mData + frameOffset;
+                mOutputBuffers[channel] = (float *)outBufferListPtr->mBuffers[channel].mData + frameOffset;
             }
 
             mKernel.process(mInputBuffers, mOutputBuffers, now, frameCount);
@@ -67,19 +62,15 @@ public:
         }
     }
 
-    AURenderEvent const * performAllSimultaneousEvents(AUEventSampleTime now, AURenderEvent const *event) {
+    AURenderEvent const *performAllSimultaneousEvents(AUEventSampleTime now, AURenderEvent const *event) {
         do {
             mKernel.handleOneEvent(now, event);
-            
-            // Go to next event.
             event = event->head.next;
-
-            // While event is not null and is simultaneous (or late).
         } while (event && event->head.eventSampleTime <= now);
         return event;
     }
 private:
-    DSPKernel& mKernel;
-    std::vector<const float*> mInputBuffers;
-    std::vector<float*> mOutputBuffers;
+    DSPKernel &mKernel;
+    std::vector<const float *> mInputBuffers;
+    std::vector<float *> mOutputBuffers;
 };

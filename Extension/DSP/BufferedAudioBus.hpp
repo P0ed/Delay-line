@@ -8,12 +8,12 @@ struct BufferedAudioBus {
     AUAudioUnitBus* bus = nullptr;
     AUAudioFrameCount maxFrames = 0;
     
-    AVAudioPCMBuffer* pcmBuffer = nullptr;
+    AVAudioPCMBuffer *pcmBuffer = nullptr;
     
-    AudioBufferList const* originalAudioBufferList = nullptr;
-    AudioBufferList* mutableAudioBufferList = nullptr;
+    AudioBufferList const *originalAudioBufferList = nullptr;
+    AudioBufferList *mutableAudioBufferList = nullptr;
 
-    void init(AVAudioFormat* defaultFormat, AVAudioChannelCount maxChannels) {
+    void init(AVAudioFormat *defaultFormat, AVAudioChannelCount maxChannels) {
         maxFrames = 0;
         pcmBuffer = nullptr;
         originalAudioBufferList = nullptr;
@@ -27,12 +27,12 @@ struct BufferedAudioBus {
     void allocateRenderResources(AUAudioFrameCount inMaxFrames) {
         maxFrames = inMaxFrames;
 
-        pcmBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bus.format frameCapacity: maxFrames];
+        pcmBuffer = [AVAudioPCMBuffer.alloc initWithPCMFormat:bus.format frameCapacity: maxFrames];
 
         originalAudioBufferList = pcmBuffer.audioBufferList;
         mutableAudioBufferList = pcmBuffer.mutableAudioBufferList;
     }
-    
+
     void deallocateRenderResources() {
         pcmBuffer = nullptr;
         originalAudioBufferList = nullptr;
@@ -40,8 +40,6 @@ struct BufferedAudioBus {
     }
 };
 
-// MARK:-  BufferedOutputBus: BufferedAudioBus
-// MARK: prepareOutputBufferList()
 /*
  BufferedOutputBus
  
@@ -64,9 +62,6 @@ struct BufferedOutputBus: BufferedAudioBus {
     }
 };
 
-// MARK: -  BufferedInputBus: BufferedAudioBus
-// MARK: pullInput()
-// MARK: prepareInputBufferList()
 /*
  BufferedInputBus
  

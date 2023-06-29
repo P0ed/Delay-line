@@ -172,40 +172,21 @@
         
         AudioUnitRenderActionFlags pullFlags = 0;
         
-        if (frameCount > kernel->maximumFramesToRender()) {
-            return kAudioUnitErr_TooManyFramesToProcess;
-        }
-        
+        if (frameCount > kernel->maximumFramesToRender()) return kAudioUnitErr_TooManyFramesToProcess;
+
         AUAudioUnitStatus err = input->pullInput(&pullFlags, timestamp, frameCount, 0, pullInputBlock);
-        
-        if (err != 0) { return err; }
-        
+        if (err != 0) return err;
+
         AudioBufferList *inAudioBufferList = input->mutableAudioBufferList;
-        
-        /*
-         Important:
-         If the caller passed non-null output pointers (outputData->mBuffers[x].mData), use those.
-         
-         If the caller passed null output buffer pointers, process in memory owned by the Audio Unit
-         and modify the (outputData->mBuffers[x].mData) pointers to point to this owned memory.
-         The Audio Unit is responsible for preserving the validity of this memory until the next call to render,
-         or deallocateRenderResources is called.
-         
-         If your algorithm cannot process in-place, you will need to preallocate an output buffer
-         and use it here.
-         
-         See the description of the canProcessInPlace property.
-         */
-        
+
         // If passed null output buffer pointers, process in-place in the input buffer.
-        AudioBufferList *outAudioBufferList = outputData;
-        if (outAudioBufferList->mBuffers[0].mData == nullptr) {
-            for (UInt32 i = 0; i < outAudioBufferList->mNumberBuffers; ++i) {
-                outAudioBufferList->mBuffers[i].mData = inAudioBufferList->mBuffers[i].mData;
+        if (outputData->mBuffers[0].mData == nullptr) {
+            for (UInt32 i = 0; i < outputData->mNumberBuffers; ++i) {
+				outputData->mBuffers[i].mData = inAudioBufferList->mBuffers[i].mData;
             }
         }
-        
-        processHelper->processWithEvents(inAudioBufferList, outAudioBufferList, timestamp, frameCount, realtimeEventListHead);
+
+        processHelper->processWithEvents(inAudioBufferList, outputData, timestamp, frameCount, realtimeEventListHead);
         return noErr;
     };
 }
