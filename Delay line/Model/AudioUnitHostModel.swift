@@ -24,10 +24,7 @@ final class AudioUnitHostModel: ObservableObject {
         wantsAudio = true
         wantsMIDI = true
         auValString = "\(type) \(subType) \(manufacturer)"
-        loadAudioUnit()
-    }
 
-    private func loadAudioUnit() {
 		playEngine.initComponent(type: type, subType: subType, manufacturer: manufacturer) { [self] result in
 			switch result {
 			case .success(let viewController):

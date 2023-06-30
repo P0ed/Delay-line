@@ -86,7 +86,7 @@ public:
 
 				if (!channel) {
 					if (hold) {
-						write(line + length - cnt, cnt);
+						offset += cnt;
 					} else {
 						for (auto idx = 0; idx < cnt; ++idx)
 							buf[idx] = sampleAt(idx) + in[channel][idx] * feedback;

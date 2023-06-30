@@ -10,11 +10,11 @@
 			<array>
 				<dict>
 					<key>description</key>
-					<string>Delay line</string>
+					<string>delay-line</string>
 					<key>manufacturer</key>
 					<string>Kost</string>
 					<key>name</key>
-					<string>Delay_line</string>
+					<string>delay-line</string>
 					<key>sandboxSafe</key>
 					<true/>
 					<key>subtype</key>
