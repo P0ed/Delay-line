@@ -14,10 +14,10 @@ private:
 
 	float *line = nullptr;
 	AUEventSampleTime offset = 0;
-	AUEventSampleTime readOffset = 44000;
+	AUEventSampleTime readOffset = 48000;
 	AUAudioFrameCount length = 0;
 
-	double sampleRate = 44000;
+	double sampleRate = 48000;
 	AUValue hold = 0;
 	AUValue zone = 0;
 	AUValue feedback = 0;

@@ -3,107 +3,72 @@ import CoreAudioKit
 import AVFoundation
 import UIKit
 
-extension AVAudioUnit {
-
-	static fileprivate func description(type: String, subType: String, manufacturer: String) -> AudioComponentDescription {
-		AudioComponentDescription(
-			componentType: type.fourCharCode!,
-			componentSubType: subType.fourCharCode!,
-			componentManufacturer: manufacturer.fourCharCode!,
-			componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
-			componentFlagsMask: 0
-		)
-	}
-
-	fileprivate func loadAudioUnitViewController(completion: @escaping (UIViewController?) -> Void) {
-		DispatchQueue.main.async {
-			let controller = AUGenericViewController()
-			controller.auAudioUnit = self.auAudioUnit
-			completion(controller)
-		}
-	}
-}
-
-public class SimplePlayEngine {
+public class Engine {
 	private var avAudioUnit: AVAudioUnit?
 	private let stateChangeQueue = DispatchQueue(label: "com.example.apple-samplecode.StateChangeQueue")
 	private let engine = AVAudioEngine()
-	private let player = AVAudioPlayerNode()
-	private var file: AVAudioFile?
 	private (set) var isPlaying = false
 
 	private let midiOutBlock: AUMIDIOutputEventBlock = { sampleTime, cable, length, data in return noErr }
-
 	var scheduleMIDIEventListBlock: AUMIDIEventListBlock? = nil
 
 	public init() {
-		engine.attach(player)
 
-		guard let fileURL = Bundle.main.url(forResource: "Synth", withExtension: "aif") else {
-			fatalError("\"Synth.aif\" file not found.")
+		let session = AVAudioSession.sharedInstance()
+		session.availableInputs?.forEach { i in
+			if i.portType == .usbAudio { try! session.setPreferredInput(i) }
 		}
-		setPlayerFile(fileURL)
+
+		let input = engine.inputNode
+		let mixer = engine.mainMixerNode
+		let output = engine.outputNode
+
+		engine.inputNode.installTap(
+			onBus: 0,
+			bufferSize: 128,
+			format: input.inputFormat(forBus: 0),
+			block: { buffer, time in }
+		)
+
+		engine.connect(input, to: mixer, format: input.inputFormat(forBus: 0))
+		engine.connect(mixer, to: output, format: mixer.inputFormat(forBus: 0))
 
 		engine.prepare()
 		setupMIDI()
 	}
 
 	private func setupMIDI() {
-		if !MIDIManager.shared.setupPort(midiProtocol: MIDIProtocolID._2_0, receiveBlock: { [weak self] eventList, _ in
-			if let scheduleMIDIEventListBlock = self?.scheduleMIDIEventListBlock {
-				_ = scheduleMIDIEventListBlock(AUEventSampleTimeImmediate, 0, eventList)
-			}
-		}) {
-			fatalError("Failed to setup Core MIDI")
-		}
+		let result = MIDIManager.shared.setupPort(
+			midiProtocol: MIDIProtocolID._2_0,
+			receiveBlock: { [weak self] events, _ in
+				_ = self?.scheduleMIDIEventListBlock?(AUEventSampleTimeImmediate, 0, events)
+			})
+		if !result { fatalError("Failed to setup Core MIDI") }
 	}
 
 	func initComponent(type: String, subType: String, manufacturer: String, completion: @escaping (Result<UIViewController, Error>) -> Void) {
-		reset()
 
-		let description = AVAudioUnit.description(type: type, subType: subType, manufacturer: manufacturer)
+		let description = AudioComponentDescription(type: type, subType: subType, manufacturer: manufacturer)
 		let lookup = { AVAudioUnitComponentManager.shared().components(matching: description).first }
 
-		guard lookup() != nil else {
-			print("Failed to find component with type: \(type), subtype: \(subType), manufacturer: \(manufacturer))" )
-			print(AVAudioUnitComponentManager.shared().components(passingTest: { _, _ in true }).map(\.name))
-			return
-		}
+		guard lookup() != nil else { fatalError("Failed to find component: \(description)") }
 
-		AVAudioUnit.instantiate(with: description, options: .loadOutOfProcess) { avAudioUnit, error in
-			guard let audioUnit = avAudioUnit, error == nil else {
-				return completion(.failure(error ?? "nil"))
-			}
+		AVAudioUnit.instantiate(with: description, options: .loadOutOfProcess) { unit, error in
+			guard let unit, error == nil else { return completion(.failure(error ?? "nil")) }
 
-			self.avAudioUnit = audioUnit
-			self.connect(avAudioUnit: audioUnit)
+			self.avAudioUnit = unit
+			self.connect(unit: unit)
 
-			audioUnit.loadAudioUnitViewController { viewController in
+			unit.loadAudioUnitViewController { viewController in
 				completion(viewController.map(Result.success) ?? .failure("nil"))
 			}
 		}
 	}
 
-	private func setPlayerFile(_ fileURL: URL) {
-		do {
-			let file = try AVAudioFile(forReading: fileURL)
-			self.file = file
-			engine.connect(player, to: engine.mainMixerNode, format: file.processingFormat)
-		} catch {
-			fatalError("Could not create AVAudioFile instance. error: \(error).")
-		}
-	}
-
 	private func setSessionActive(_ active: Bool) {
-#if os(iOS)
-		do {
-			let session = AVAudioSession.sharedInstance()
-			try session.setCategory(.playback, mode: .default)
-			try session.setActive(active)
-		} catch {
-			fatalError("Could not set Audio Session active \(active). error: \(error).")
-		}
-#endif
+		let session = AVAudioSession.sharedInstance()
+		try! session.setCategory(.playback, mode: .default)
+		try! session.setActive(active)
 	}
 
 	public func startPlaying() {
@@ -119,102 +84,65 @@ public class SimplePlayEngine {
 	}
 
 	public func togglePlay() -> Bool {
-		if isPlaying {
-			stopPlaying()
-		} else {
-			startPlaying()
-		}
+		isPlaying ? stopPlaying() : startPlaying()
 		return isPlaying
 	}
 
 	private func startPlayingInternal() {
 		guard avAudioUnit != nil else { return }
-
-		// assumptions: we are protected by stateChangeQueue. we are not playing.
 		setSessionActive(true)
-
-		scheduleEffectLoop()
-		scheduleEffectLoop()
-
-		let hardwareFormat = engine.outputNode.outputFormat(forBus: 0)
-		engine.connect(engine.mainMixerNode, to: engine.outputNode, format: hardwareFormat)
-
-		do {
-			try engine.start()
-		} catch {
-			isPlaying = false
-			fatalError("Could not start engine. error: \(error).")
-		}
-
-		player.play()
+		try! engine.start()
 		isPlaying = true
 	}
 
 	private func stopPlayingInternal() {
 		guard avAudioUnit != nil else { return }
-
-		player.stop()
 		engine.stop()
 		isPlaying = false
 		setSessionActive(false)
 	}
 
-	private func scheduleEffectLoop() {
-		guard let file = file else {
-			fatalError("`file` must not be nil in \(#function).")
-		}
-
-		player.scheduleFile(file, at: nil) {
-			self.stateChangeQueue.async {
-				if self.isPlaying {
-					self.scheduleEffectLoop()
-				}
-			}
-		}
-	}
-
-	private func resetAudioLoop() {
-		guard avAudioUnit != nil else { return }
-
-		guard let format = file?.processingFormat else { fatalError("No AVAudioFile defined (processing format unavailable).") }
-		engine.connect(player, to: engine.mainMixerNode, format: format)
-	}
-
-	public func reset() {
-		
-	}
-
-	public func connect(avAudioUnit: AVAudioUnit, completion: @escaping (() -> Void) = {}) {
+	private func connect(unit: AVAudioUnit, completion: @escaping () -> Void = {}) {
 		engine.disconnectNodeInput(engine.mainMixerNode)
-		resetAudioLoop()
-		engine.detach(avAudioUnit)
+		engine.detach(unit)
 
-		let hardwareFormat = engine.outputNode.outputFormat(forBus: 0)
+		let fmt = engine.outputNode.outputFormat(forBus: 0)
+		engine.connect(engine.mainMixerNode, to: engine.outputNode, format: fmt)
 
-		engine.connect(engine.mainMixerNode, to: engine.outputNode, format: hardwareFormat)
-
-		// Pause the player before re-wiring it. It is not simple to keep it playing across an insertion or deletion.
-		if isPlaying { player.pause() }
-
-		let auAudioUnit = avAudioUnit.auAudioUnit
-
-		if !auAudioUnit.midiOutputNames.isEmpty {
-			auAudioUnit.midiOutputEventBlock = midiOutBlock
+		if !unit.auAudioUnit.midiOutputNames.isEmpty {
+			unit.auAudioUnit.midiOutputEventBlock = midiOutBlock
 		}
 
-		engine.attach(avAudioUnit)
+		engine.attach(unit)
 
 		engine.disconnectNodeInput(engine.mainMixerNode)
+		engine.connect(engine.inputNode, to: unit, format: fmt)
+		engine.connect(unit, to: engine.mainMixerNode, format: fmt)
 
-		if let format = file?.processingFormat {
-			engine.connect(player, to: avAudioUnit, format: format)
-			engine.connect(avAudioUnit, to: engine.mainMixerNode, format: format)
-		}
-
-		scheduleMIDIEventListBlock = auAudioUnit.scheduleMIDIEventListBlock
-		if isPlaying {
-			player.play()
-		}
+		scheduleMIDIEventListBlock = unit.auAudioUnit.scheduleMIDIEventListBlock
 		completion()
+	}
+}
+
+extension AudioComponentDescription {
+	init(type: String, subType: String, manufacturer: String) {
+		self = AudioComponentDescription(
+			componentType: type.fourCharCode!,
+			componentSubType: subType.fourCharCode!,
+			componentManufacturer: manufacturer.fourCharCode!,
+			componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
+			componentFlagsMask: 0
+		)
+	}
+}
+
+extension AVAudioUnit {
+
+	fileprivate func loadAudioUnitViewController(completion: @escaping (UIViewController?) -> Void) {
+		DispatchQueue.main.async {
+			let controller = AUGenericViewController()
+			controller.auAudioUnit = self.auAudioUnit
+			completion(controller)
+		}
 	}
 }

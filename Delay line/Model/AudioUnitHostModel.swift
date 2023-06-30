@@ -4,7 +4,7 @@ import AudioToolbox
 
 final class AudioUnitHostModel: ObservableObject {
 
-    private let playEngine = SimplePlayEngine()
+    private let engine = Engine()
 
     @Published private(set) var viewModel = AudioUnitViewModel()
 
@@ -25,7 +25,7 @@ final class AudioUnitHostModel: ObservableObject {
         wantsMIDI = true
         auValString = "\(type) \(subType) \(manufacturer)"
 
-		playEngine.initComponent(type: type, subType: subType, manufacturer: manufacturer) { [self] result in
+		engine.initComponent(type: type, subType: subType, manufacturer: manufacturer) { [self] result in
 			switch result {
 			case .success(let viewController):
 				viewModel = AudioUnitViewModel(
@@ -36,7 +36,7 @@ final class AudioUnitHostModel: ObservableObject {
 					viewController: viewController
 				)
 
-				if isPlaying { playEngine.startPlaying() }
+				if isPlaying { engine.startPlaying() }
 
 			case .failure(let error):
 				viewModel = AudioUnitViewModel(
@@ -52,13 +52,13 @@ final class AudioUnitHostModel: ObservableObject {
 
     func startPlaying() {
 		if !isPlaying {
-			playEngine.startPlaying()
+			engine.startPlaying()
 			isPlaying = true
 		}
 	}
     func stopPlaying() {
 		if isPlaying {
-			playEngine.stopPlaying()
+			engine.stopPlaying()
 			isPlaying = false
 		}
 	}
