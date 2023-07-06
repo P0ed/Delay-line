@@ -9,7 +9,6 @@ public class Engine {
 	private let engine = AVAudioEngine()
 
 	public init() {
-
 		let input = engine.inputNode
 		let mixer = engine.mainMixerNode
 		let output = engine.outputNode
@@ -20,14 +19,11 @@ public class Engine {
 		engine.prepare()
 	}
 
-	func initComponent(type: String, subType: String, manufacturer: String, completion: @escaping (Result<UIViewController, Error>) -> Void) {
+	func setup(completion: @escaping (Result<UIViewController, Error>) -> Void) {
+		let lookup = { AVAudioUnitComponentManager.shared().components(matching: .delayLine).first }
+		guard lookup() != nil else { fatalError("Failed to find component") }
 
-		let description = AudioComponentDescription(type: type, subType: subType, manufacturer: manufacturer)
-		let lookup = { AVAudioUnitComponentManager.shared().components(matching: description).first }
-
-		guard lookup() != nil else { fatalError("Failed to find component: \(description)") }
-
-		AVAudioUnit.instantiate(with: description, options: .loadOutOfProcess) { unit, error in
+		AVAudioUnit.instantiate(with: .delayLine, options: .loadOutOfProcess) { unit, error in
 			guard let unit, error == nil else { return completion(.failure(error ?? "nil")) }
 
 			self.avAudioUnit = unit
@@ -58,13 +54,11 @@ public class Engine {
 }
 
 extension AudioComponentDescription {
-	init(type: String, subType: String, manufacturer: String) {
-		self = AudioComponentDescription(
-			componentType: type.fourCharCode!,
-			componentSubType: subType.fourCharCode!,
-			componentManufacturer: manufacturer.fourCharCode!,
-			componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
-			componentFlagsMask: 0
-		)
-	}
+	static let delayLine = AudioComponentDescription(
+		componentType: "aufx".fourCharCode!,
+		componentSubType: "dlln".fourCharCode!,
+		componentManufacturer: "Kost".fourCharCode!,
+		componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
+		componentFlagsMask: 0
+	)
 }

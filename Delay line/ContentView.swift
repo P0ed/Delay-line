@@ -35,3 +35,21 @@ struct ViewControllerRepresentable: UIViewControllerRepresentable {
 	func makeUIViewController(context: Context) -> UIViewController { viewController }
 	func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
+
+struct AnyUIView<View: UIView>: UIViewRepresentable {
+	var make: (Context) -> View
+	var update: (View, Context) -> Void = { _, _ in }
+
+	func makeUIView(context: Context) -> View { make(context) }
+	func updateUIView(_ uiView: View, context: Context) { update(uiView, context) }
+}
+
+import MetalKit
+
+func metal() -> AnyUIView<MTKView> {
+	.init(make: { _ in
+		let view = MTKView()
+
+		return view
+	})
+}

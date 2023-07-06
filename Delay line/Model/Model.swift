@@ -4,17 +4,15 @@ import AudioToolbox
 import AVFoundation
 
 final class Model: ObservableObject {
+	@Published private(set) var state: Result<UIViewController, String>?
 
 	private let engine: Engine
 
-	@Published private(set) var state: Result<UIViewController, String>?
-
-    init(type: String = "aufx", subType: String = "dlln", manufacturer: String = "Kost") {
+    init() {
 		AVAudioSession.activate()
 
 		engine = Engine()
-
-		engine.initComponent(type: type, subType: subType, manufacturer: manufacturer) { [self] result in
+		engine.setup { [self] result in
 			state = result.mapError { $0 as? String ?? $0.localizedDescription }
 		}
 
@@ -22,7 +20,7 @@ final class Model: ObservableObject {
     }
 }
 
-extension AVAudioSession {
+private extension AVAudioSession {
 
 	static func activate() {
 		let session = AVAudioSession.sharedInstance()

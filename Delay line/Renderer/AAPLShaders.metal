@@ -1,10 +1,3 @@
-/*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Metal shaders used for this sample
-*/
-
 #include <metal_stdlib>
 #include <simd/simd.h>
 

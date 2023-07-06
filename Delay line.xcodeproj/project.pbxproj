@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5F090ECB2A57538E00DD29B8 /* AAPLRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC62A57538E00DD29B8 /* AAPLRenderer.m */; };
+		5F090ECD2A57538E00DD29B8 /* AAPLShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */; };
 		5F2D2DDA2A4DACBB00125390 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DD92A4DACBB00125390 /* ContentView.swift */; };
 		5F2D2DE32A4DACBB00125390 /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DE22A4DACBB00125390 /* Engine.swift */; };
 		5F2D2DE82A4DACBB00125390 /* StringHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DE72A4DACBB00125390 /* StringHelpers.swift */; };
@@ -50,6 +52,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5F090EC32A57538E00DD29B8 /* AAPLShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAPLShaderTypes.h; sourceTree = "<group>"; };
+		5F090EC42A57538E00DD29B8 /* AAPLRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AAPLRenderer.h; sourceTree = "<group>"; };
+		5F090EC62A57538E00DD29B8 /* AAPLRenderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AAPLRenderer.m; sourceTree = "<group>"; };
+		5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = AAPLShaders.metal; sourceTree = "<group>"; };
 		5F2D2DD62A4DACBB00125390 /* Delay line.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Delay line.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F2D2DD92A4DACBB00125390 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5F2D2DE22A4DACBB00125390 /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
@@ -95,6 +101,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5F090EC22A57538E00DD29B8 /* Renderer */ = {
+			isa = PBXGroup;
+			children = (
+				5F090EC32A57538E00DD29B8 /* AAPLShaderTypes.h */,
+				5F090EC42A57538E00DD29B8 /* AAPLRenderer.h */,
+				5F090EC62A57538E00DD29B8 /* AAPLRenderer.m */,
+				5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */,
+			);
+			path = Renderer;
+			sourceTree = "<group>";
+		};
 		5F2D2DCD2A4DACBB00125390 = {
 			isa = PBXGroup;
 			children = (
@@ -122,6 +139,7 @@
 				5F2D2DF32A4DACBD00125390 /* Assets.xcassets */,
 				5F2D2DF82A4DACBD00125390 /* Delay_line.entitlements */,
 				5F2D2DEC2A4DACBB00125390 /* Model */,
+				5F090EC22A57538E00DD29B8 /* Renderer */,
 				5F2D2DF52A4DACBD00125390 /* Preview Content */,
 			);
 			path = "Delay line";
@@ -306,10 +324,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				5F2D2DEE2A4DACBB00125390 /* Model.swift in Sources */,
+				5F090ECD2A57538E00DD29B8 /* AAPLShaders.metal in Sources */,
 				5F2D2DE82A4DACBB00125390 /* StringHelpers.swift in Sources */,
 				5F2D2DDA2A4DACBB00125390 /* ContentView.swift in Sources */,
 				5F2D2DE32A4DACBB00125390 /* Engine.swift in Sources */,
 				5F2D2DF22A4DACBB00125390 /* App.swift in Sources */,
+				5F090ECB2A57538E00DD29B8 /* AAPLRenderer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
