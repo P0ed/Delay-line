@@ -7,8 +7,8 @@ namespace ParameterAddress {
 #endif
 
 typedef NS_ENUM(AUParameterAddress, ParameterAddress) {
-	hold = 0,
-    feedback = 1
+	hold,
+	speed
 };
 
 #ifdef __cplusplus

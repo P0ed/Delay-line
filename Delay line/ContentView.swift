@@ -2,24 +2,30 @@ import AudioToolbox
 import SwiftUI
 
 struct ContentView: View {
-    @ObservedObject var hostModel: AudioUnitHostModel
+    @ObservedObject var model: Model
 
     var body: some View {
-		if let viewController = hostModel.viewModel.viewController {
+		switch model.state {
+		case .success(let viewController)?:
 			ViewControllerRepresentable(viewController: viewController)
-		} else {
-			VStack() {
-				Text(hostModel.viewModel.message)
-					.padding()
-			}
-			.frame(minWidth: 400, minHeight: 200)
+		case .failure(let error):
+			message(error)
+		case .none:
+			message("No Audio Unit loaded..")
 		}
     }
+
+	private func message(_ text: String) -> some View {
+		VStack() {
+			Text(text).padding()
+		}
+		.frame(minWidth: 400, minHeight: 200)
+	}
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(hostModel: AudioUnitHostModel())
+        ContentView(model: Model())
     }
 }
 

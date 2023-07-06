@@ -3,13 +3,13 @@ import SwiftUI
 
 @main
 final class App: SwiftUI.App {
-    @ObservedObject private var hostModel = AudioUnitHostModel()
+    @ObservedObject private var model = Model()
 
     required init() {}
 
     var body: some Scene {
         WindowGroup {
-            ContentView(hostModel: hostModel)
+            ContentView(model: model)
         }
     }
 }

@@ -7,94 +7,64 @@
 
 #import "Extension-Swift.h"
 #import "ParameterAddresses.h"
+#import "Buffer.hpp"
 
 class DSPKernel {
 private:
 	AUHostMusicalContextBlock musicalContextBlock;
 
-	float *line = nullptr;
-	AUEventSampleTime offset = 0;
-	AUEventSampleTime readOffset = 48000;
-	AUAudioFrameCount length = 0;
+	int maxFrames = 1024;
+
+	Buffer buffer = Buffer();
+	Buffer line = Buffer();
 
 	double sampleRate = 48000;
 	AUValue hold = 0;
-	AUValue zone = 0;
-	AUValue feedback = 0;
-
-	bool bypassed = false;
-
-	AUAudioFrameCount maxFrames = 1024;
-	float *buf = new float[maxFrames];
-
-	void write(const float *samples, AUAudioFrameCount cnt) {
-		offset = offset + this->offset;
-		for (auto i = offset; i < offset + cnt; ++i) line[i % length] = samples[i % length];
-		this->offset = (this->offset + cnt) % length;
-	}
-
-	float sampleAt(AUEventSampleTime idx) { return line[(idx + offset + readOffset) % length]; }
+	AUValue speed = 1;
+	AUValue targetSpeed = 1;
 
 public:
 	void initialize(int inputChannelCount, int outputChannelCount, double samplesPerSecond) {
 		sampleRate = samplesPerSecond;
-		length = int(samplesPerSecond * 4);
-		line = new float[length];
-		offset = 0;
+		int len = samplesPerSecond * 1;
+		line.allocate(len);
+		buffer.allocate(len);
 	}
 	void deInitialize() {
-		delete[] line;
-		line = nullptr;
-		delete[] buf;
-		buf = nullptr;
+		line.deallocate();
+		buffer.deallocate();
 	}
 
 	AUValue getParameter(AUParameterAddress address) {
 		switch (address) {
 			case ParameterAddress::hold: return hold;
-			case ParameterAddress::feedback: return feedback;
+			case ParameterAddress::speed: return targetSpeed;
 			default: return 0;
 		}
 	}
 	void setParameter(AUParameterAddress address, AUValue value) {
 		switch (address) {
 			case ParameterAddress::hold: hold = value; return;
-			case ParameterAddress::feedback: feedback = value; return;
+			case ParameterAddress::speed: targetSpeed = value; return;
 		}
 	}
 
-	bool isBypassed() { return bypassed; }
-	void setBypass(bool shouldBypass) { bypassed = shouldBypass; }
-	AUAudioFrameCount maximumFramesToRender() const { return maxFrames; }
-	void setMaximumFramesToRender(const AUAudioFrameCount &frames) {
-		maxFrames = frames;
-		delete[] buf;
-		buf = new float[maxFrames];
-	}
+	int maximumFramesToRender() const { return maxFrames; }
+	void setMaximumFramesToRender(const int &frames) { maxFrames = frames; }
+
 	void setMusicalContextBlock(AUHostMusicalContextBlock block) { musicalContextBlock = block; }
 
-	void process(std::span<float const*> in, std::span<float *> out, AUEventSampleTime startTime, AUAudioFrameCount cnt) {
-		if (bypassed) {
-			for (auto channel = 0; channel < in.size(); ++channel) {
-				std::copy_n(in[channel], cnt, out[channel]);
-			}
-		} else {
-			for (auto channel = 0; channel < in.size(); ++channel) {
+	void process(std::span<float const*> in, std::span<float *> out, AUEventSampleTime startTime, int cnt) {
+		for (int ch = 0; ch < in.size(); ++ch)
+			line.read(Buffer(out[ch], cnt));
 
-				for (auto idx = 0; idx < cnt; ++idx)
-					out[channel][idx] = sampleAt(idx);
-
-				if (!channel) {
-					if (hold) {
-						offset += cnt;
-					} else {
-						for (auto idx = 0; idx < cnt; ++idx)
-							buf[idx] = sampleAt(idx) + in[channel][idx] * feedback;
-						write(buf, cnt);
-					}
-				}
-			}
+		for (int ch = 0; ch < in.size(); ++ch) if (!ch) {
+			if (!hold) line.write(Buffer((float *)in[ch], cnt));
+			line.offset += cnt;
 		}
+
+//		if (abs(targetSpeed - speed) > 0.02) speed = targetSpeed;
+//		else speed += (targetSpeed - speed) * cnt / sampleRate;
 	}
 
 	void handleOneEvent(AUEventSampleTime now, AURenderEvent const *event) {
