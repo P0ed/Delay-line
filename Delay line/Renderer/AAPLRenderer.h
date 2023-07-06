@@ -2,6 +2,6 @@
 
 @interface AAPLRenderer : NSObject<MTKViewDelegate>
 
-- (nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)mtkView;
+- (nonnull instancetype)initWithDevice:(nonnull id <MTLDevice>)device format:(MTLPixelFormat)format;
 
 @end

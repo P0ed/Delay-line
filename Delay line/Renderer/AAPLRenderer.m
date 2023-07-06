@@ -6,6 +6,7 @@
 
 @implementation AAPLRenderer {
     id<MTLDevice> _device;
+	MTLPixelFormat _format;
     id<MTLRenderPipelineState> _pipelineState;
     id<MTLCommandQueue> _commandQueue;
 
@@ -22,33 +23,12 @@
     vector_uint2 _viewportSize;
 }
 
-- (id<MTLTexture>)loadTextureUsing:(float *)data width:(int)width height:(int)height {
-    MTLTextureDescriptor *textureDescriptor = [MTLTextureDescriptor.alloc init];
-    textureDescriptor.pixelFormat = MTLPixelFormatR32Float;
-    textureDescriptor.width = width;
-    textureDescriptor.height = height;
-
-	id<MTLTexture> texture = [_device newTextureWithDescriptor:textureDescriptor];
-
-    NSUInteger bytesPerRow = 4 * width;
-
-    MTLRegion region = {
-        { 0, 0, 0 },			// MTLOrigin
-        {width, height, 1}		// MTLSize
-    };
-
-	[texture replaceRegion:region
-                mipmapLevel:0
-                  withBytes:data
-                bytesPerRow:bytesPerRow];
-    return texture;
-}
-
-- (instancetype)initWithMetalKitView:(MTKView *)mtkView {
+- (nonnull instancetype)initWithDevice:(nonnull id <MTLDevice>)device format:(MTLPixelFormat)format {
     self = [super init];
 	if (!self) return nil;
 
-	_device = mtkView.device;
+	_device = device;
+	_format = format;
 
 	float px[1] = { 0.5 };
 	_texture = [self loadTextureUsing:px width:1 height:1];
@@ -73,17 +53,15 @@
 	// Calculate the number of vertices by dividing the byte length by the size of each vertex
 	_numVertices = sizeof(quadVertices) / sizeof(AAPLVertex);
 
-	// Load the shaders from the default library
 	id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
 	id<MTLFunction> vertexFunction = [defaultLibrary newFunctionWithName:@"vertexShader"];
 	id<MTLFunction> fragmentFunction = [defaultLibrary newFunctionWithName:@"samplingShader"];
 
-	// Set up a descriptor for creating a pipeline state object
-	MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	MTLRenderPipelineDescriptor *pipelineStateDescriptor = [MTLRenderPipelineDescriptor.alloc init];
 	pipelineStateDescriptor.label = @"Texturing Pipeline";
 	pipelineStateDescriptor.vertexFunction = vertexFunction;
 	pipelineStateDescriptor.fragmentFunction = fragmentFunction;
-	pipelineStateDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat;
+	pipelineStateDescriptor.colorAttachments[0].pixelFormat = _format;
 
 	NSError *error;
 	_pipelineState = [_device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
@@ -91,6 +69,28 @@
 	_commandQueue = _device.newCommandQueue;
 
     return self;
+}
+
+- (id<MTLTexture>)loadTextureUsing:(float *)data width:(int)width height:(int)height {
+	MTLTextureDescriptor *textureDescriptor = [MTLTextureDescriptor.alloc init];
+	textureDescriptor.pixelFormat = MTLPixelFormatR32Float;
+	textureDescriptor.width = width;
+	textureDescriptor.height = height;
+
+	id<MTLTexture> texture = [_device newTextureWithDescriptor:textureDescriptor];
+
+	NSUInteger bytesPerRow = 4 * width;
+
+	MTLRegion region = {
+		{ 0, 0, 0 },			// MTLOrigin
+		{width, height, 1}		// MTLSize
+	};
+
+	[texture replaceRegion:region
+				mipmapLevel:0
+				  withBytes:data
+				bytesPerRow:bytesPerRow];
+	return texture;
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {

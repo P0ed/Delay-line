@@ -21,10 +21,11 @@ public class Engine {
 
 	func setup(completion: @escaping (Result<UIViewController, Error>) -> Void) {
 		let lookup = { AVAudioUnitComponentManager.shared().components(matching: .delayLine).first }
-		guard lookup() != nil else { fatalError("Failed to find component") }
+		let err = { msg in DispatchQueue.main.async { completion(.failure(msg)) } }
+		guard lookup() != nil else { return err("Failed to find component") }
 
 		AVAudioUnit.instantiate(with: .delayLine, options: .loadOutOfProcess) { unit, error in
-			guard let unit, error == nil else { return completion(.failure(error ?? "nil")) }
+			guard let unit, error == nil else { return err(error ?? "nil") }
 
 			self.avAudioUnit = unit
 			self.connect(unit: unit)

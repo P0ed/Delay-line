@@ -46,9 +46,16 @@ struct AnyUIView<View: UIView>: UIViewRepresentable {
 
 import MetalKit
 
+private var rendererKey = 0
+
 func metal() -> AnyUIView<MTKView> {
 	.init(make: { _ in
 		let view = MTKView()
+		let renderer = AAPLRenderer(device: view.device!, format: .r32Float)
+		objc_setAssociatedObject(view, &rendererKey, renderer, .OBJC_ASSOCIATION_RETAIN)
+
+		view.colorPixelFormat = .r32Float
+		view.delegate = renderer
 
 		return view
 	})
