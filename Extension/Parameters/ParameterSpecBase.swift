@@ -143,8 +143,8 @@ extension Array where Element == NodeSpec {
     }
 }
 
-extension ParameterTreeSpec {
-    func createAUParameterTree() -> AUParameterTree {
-        AUParameterTree.createTree(withChildren: self.children.createAUParameterNodes())
+extension AUParameterTree {
+    @objc static func make() -> AUParameterTree {
+        AUParameterTree.createTree(withChildren: parameterSpecs.children.createAUParameterNodes())
     }
 }

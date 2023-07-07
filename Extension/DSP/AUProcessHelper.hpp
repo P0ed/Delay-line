@@ -33,28 +33,22 @@ public:
         };
         
         while (framesRemaining > 0) {
-            // If there are no more events, we can process the entire remaining segment and exit.
             if (nextEvent == nullptr) {
                 AUAudioFrameCount const frameOffset = frameCount - framesRemaining;
                 callProcess(inBufferList, outBufferList, now, framesRemaining, frameOffset);
                 return;
             }
 
-            // **** start late events late.
             auto timeZero = AUEventSampleTime(0);
             auto headEventTime = nextEvent->head.eventSampleTime;
             AUAudioFrameCount framesThisSegment = AUAudioFrameCount(std::max(timeZero, headEventTime - now));
 
-            // Compute everything before the next event.
             if (framesThisSegment > 0) {
                 AUAudioFrameCount const frameOffset = frameCount - framesRemaining;
 
                 callProcess(inBufferList, outBufferList, now, framesThisSegment, frameOffset);
 
-                // Advance frames.
                 framesRemaining -= framesThisSegment;
-
-                // Advance time.
                 now += AUEventSampleTime(framesThisSegment);
             }
 

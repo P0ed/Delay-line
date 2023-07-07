@@ -15,7 +15,8 @@ private:
 
 	int maxFrames = 1024;
 
-	Buffer buffer = Buffer();
+	Buffer ax = Buffer();
+	Buffer bx = Buffer();
 	Buffer line = Buffer();
 
 	double sampleRate = 48000;
@@ -28,11 +29,13 @@ public:
 		sampleRate = samplesPerSecond;
 		int len = samplesPerSecond * 1;
 		line.allocate(len);
-		buffer.allocate(len);
+		ax.allocate(len);
+		bx.allocate(len);
 	}
 	void deInitialize() {
 		line.deallocate();
-		buffer.deallocate();
+		ax.deallocate();
+		bx.deallocate();
 	}
 
 	AUValue getParameter(AUParameterAddress address) {
@@ -55,16 +58,20 @@ public:
 	void setMusicalContextBlock(AUHostMusicalContextBlock block) { musicalContextBlock = block; }
 
 	void process(std::span<float const*> in, std::span<float *> out, AUEventSampleTime startTime, int cnt) {
-		for (int ch = 0; ch < in.size(); ++ch)
-			line.read(Buffer(out[ch], cnt));
-
-		for (int ch = 0; ch < in.size(); ++ch) if (!ch) {
-			if (!hold) line.write(Buffer((float *)in[ch], cnt));
+		if (speed == 1 && targetSpeed == 1) {
+			line.read(Buffer(out[0], cnt));
+			if (!hold) line.write(Buffer((float *)in[0], cnt));
 			line.offset += cnt;
-		}
+		} else {
+			double time = cnt / sampleRate;
+			if (abs(targetSpeed - speed) > 0.02) speed = targetSpeed;
+			else speed += (targetSpeed - speed) * time / 2;
 
-//		if (abs(targetSpeed - speed) > 0.02) speed = targetSpeed;
-//		else speed += (targetSpeed - speed) * cnt / sampleRate;
+//			line.read(
+//
+//			int lineCnt = speed * cnt;
+//			line.offset += lineCnt;
+		}
 	}
 
 	void handleOneEvent(AUEventSampleTime now, AURenderEvent const *event) {

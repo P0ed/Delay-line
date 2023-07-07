@@ -4,7 +4,7 @@ import AudioToolbox
 import AVFoundation
 
 final class Model: ObservableObject {
-	@Published private(set) var state: Result<UIViewController, String>?
+	@Published private(set) var state: Result<UIViewController, String> = .failure("No Audio Unit loaded..")
 
 	private let engine: Engine
 
@@ -15,8 +15,6 @@ final class Model: ObservableObject {
 		engine.setup { [self] result in
 			state = result.mapError { $0 as? String ?? $0.localizedDescription }
 		}
-
-		UIApplication.shared.isIdleTimerDisabled = true
     }
 }
 

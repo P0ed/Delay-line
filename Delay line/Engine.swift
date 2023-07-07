@@ -4,8 +4,7 @@ import AVFoundation
 import UIKit
 
 public class Engine {
-	private var avAudioUnit: AVAudioUnit?
-	private let stateChangeQueue = DispatchQueue(label: "delay-line.stateChangeQueue")
+	private var unit: AVAudioUnit?
 	private let engine = AVAudioEngine()
 
 	public init() {
@@ -21,20 +20,18 @@ public class Engine {
 
 	func setup(completion: @escaping (Result<UIViewController, Error>) -> Void) {
 		let lookup = { AVAudioUnitComponentManager.shared().components(matching: .delayLine).first }
-		let err = { msg in DispatchQueue.main.async { completion(.failure(msg)) } }
-		guard lookup() != nil else { return err("Failed to find component") }
+		let completion = { result in DispatchQueue.main.async { completion(result) } }
+		guard lookup() != nil else { return completion(.failure("Failed to find component")) }
 
 		AVAudioUnit.instantiate(with: .delayLine, options: .loadOutOfProcess) { unit, error in
-			guard let unit, error == nil else { return err(error ?? "nil") }
+			guard let unit, error == nil else { return completion(.failure(error ?? "xxx")) }
 
-			self.avAudioUnit = unit
+			self.unit = unit
 			self.connect(unit: unit)
-			self.stateChangeQueue.sync { try! self.engine.start() }
+			try! self.engine.start()
 
-			DispatchQueue.main.async {
-				let controller = AUGenericViewController()
-				controller.auAudioUnit = unit.auAudioUnit
-				completion(.success(controller))
+			unit.auAudioUnit.requestViewController { controller in
+				completion(controller.map { .success($0) } ?? .failure("nil"))
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 import Foundation
 import AudioToolbox
 
-let ParameterSpecs = ParameterTreeSpec {
+let parameterSpecs = ParameterTreeSpec {
     ParameterGroupSpec(identifier: "base", name: "Base") {
 		ParameterSpec(
 			address: .hold,

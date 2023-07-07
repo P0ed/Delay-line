@@ -3,4 +3,54 @@
    uuid = "66DC6BCD-B77D-433E-9C47-7CC315E74E39"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "AD474F7F-20AA-41F8-8B34-DD5AD933A987"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Extension/DSP/DSPKernel.hpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
+            landmarkName = "process(in, out, startTime, cnt)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "AD474F7F-20AA-41F8-8B34-DD5AD933A987 - a762ad22ddb4241c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "DSPKernel::process(std::__1::span&lt;float const*, 18446744073709551615ul&gt;, std::__1::span&lt;float*, 18446744073709551615ul&gt;, long long, int)"
+                  moduleName = "Extension"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/poed/Documents/Dev/Delay%20line/Extension/DSP/DSPKernel.hpp"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "69"
+                  endingLineNumber = "69"
+                  offsetFromSymbolStart = "323">
+               </Location>
+               <Location
+                  uuid = "AD474F7F-20AA-41F8-8B34-DD5AD933A987 - a762ad22ddb42473"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "DSPKernel::process(std::__1::span&lt;float const*, 18446744073709551615ul&gt;, std::__1::span&lt;float*, 18446744073709551615ul&gt;, long long, int)"
+                  moduleName = "Extension"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/poed/Documents/Dev/Delay%20line/Extension/DSP/DSPKernel.hpp"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "66"
+                  endingLineNumber = "66"
+                  offsetFromSymbolStart = "323">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

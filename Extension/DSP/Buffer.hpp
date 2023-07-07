@@ -1,5 +1,7 @@
 #pragma once
 
+#import <Accelerate/Accelerate.h>
+
 struct Buffer {
 	float *data;
 	int length;
@@ -27,7 +29,7 @@ struct Buffer {
 		loop = 0;
 	}
 
-	float& operator[](int index) {
+	float & operator[](int index) {
 		return data[(offset + index % loop) % length];
 	}
 
@@ -39,4 +41,8 @@ struct Buffer {
 	}
 
 	Buffer sub(int len) { return Buffer(data, length, offset, len); }
+
+	void resample(Buffer out, Buffer ax, float speed, float targetSpeed) {
+		
+	}
 };
