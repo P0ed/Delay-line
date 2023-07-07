@@ -30,13 +30,14 @@ struct Buffer {
 	void move(int dx) {
 		offset = (offset + dx) % length;
 	}
-	void read(Buffer buffer) {
-		for (int i = 0; i < buffer.length; ++i) buffer[i] = (*this)[i];
+	void read(float *data, int length) {
+		for (int i = 0; i < length; ++i) data[i] = (*this)[i];
 	}
-	void write(Buffer buffer) {
-		for (int i = 0; i < buffer.length; ++i) (*this)[i] = buffer[i];
-	}
-	Buffer sub(int length, int offset = 0) {
-		return Buffer(data, length, offset);
+	void write(float const *data, int length) {
+		for (int i = 0; i < length; ++i) (*this)[i] = data[i];
 	}
 };
+
+void copy(float const *src, float *dst, int cnt) {
+	for (int i = 0; i < cnt; ++i) dst[i] = src[i];
+}

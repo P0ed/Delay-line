@@ -15,7 +15,7 @@ let parameterSpecs = ParameterTreeSpec {
 			identifier: "speed",
 			name: "Speed",
 			units: .rate,
-			valueRange: 1...4
+			valueRange: 0.25...4
 		)
     }
 }

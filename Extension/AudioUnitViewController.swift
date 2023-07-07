@@ -6,7 +6,6 @@ import SwiftUI
 
 final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 	var unit: DelayUnit?
-	var lifetime: Any?
 
 	public override func beginRequest(with context: NSExtensionContext) {}
 
@@ -18,39 +17,73 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		return unit
 	}
 
-	private func setupUI(unit: DelayUnit) {
-		let hold = unit.parameterTree?.parameter(withAddress: ParameterAddress.hold.rawValue)
-		let speed = unit.parameterTree?.parameter(withAddress: ParameterAddress.speed.rawValue)
+	struct State {
+		var holds = false
+		var stopped = false
+		var speed = 1 as Float
+	}
 
-		// ??
-		lifetime = unit.observe(\.allParameterValues, options: [.new]) { object, change in
-			unit.parameterTree?.allParameters.forEach { $0.value = $0.value }
+	var state = State() {
+		didSet {
+			let hld = state.holds || state.stopped ? 1 : 0 as Float
+			let oldHld = oldValue.holds || oldValue.stopped ? 1 : 0 as Float
+			if hld != oldHld { parameter(.hold)?.value = hld }
+
+			let spd = state.stopped ? 0 : state.speed
+			let oldSpd = oldValue.stopped ? 0 : oldValue.speed
+			if spd != oldSpd { parameter(.speed)?.value = spd }
 		}
+	}
 
-		let controller = UIHostingController(rootView: VStack {
-			Spacer()
-			Spacer()
-			Button("hold", action: { hold?.value = hold?.value == 0 ? 1 : 0 }).font(.headline)
-			Spacer()
-			Button("+", action: { speed?.value = max(10, speed?.value ?? 0 + 0.4) }).font(.headline)
-			Spacer()
-			Button("-", action: { speed?.value = max(0, speed?.value ?? 0 - 0.4) }).font(.headline)
-			Spacer()
-			Spacer()
-		})
-		addChild(controller)
-		controller.view.frame = view.bounds
-		view.addSubview(controller.view)
-		controller.didMove(toParent: self)
+	func parameter(_ address: ParameterAddress) -> AUParameter? {
+		unit?.parameterTree?.parameter(withAddress: address.rawValue)
+	}
+
+	private func setupUI(unit: DelayUnit) {
+
+		view.addGestureRecognizer(UITapGestureRecognizer(
+			handler: { [weak self] _ in
+				self?.state.holds.toggle()
+			},
+			setupDelegate: { rec, delegate in
+				rec.numberOfTapsRequired = 1
+			}
+		))
+
+		view.addGestureRecognizer(UITapGestureRecognizer(
+			handler: { [weak self] _ in
+				self?.state.stopped.toggle()
+			},
+			setupDelegate: { rec, delegate in
+				rec.numberOfTapsRequired = 2
+			}
+		))
+
+		view.addGestureRecognizer(UIPanGestureRecognizer(
+			handler: { [weak self] recognizer in
+				guard let self, let view = recognizer.view else { return }
+
+				let translation = recognizer.translation(in: view).y
+
+				switch recognizer.state {
+				case .began: state.holds = true
+				case .changed: state.speed = abs(1 - Float(translation) / 256)
+				case .cancelled: state.holds = false
+				case .ended: state.holds = false
+				default: break
+				}
+			},
+			setupDelegate: { rec, delegate in
+
+			}
+		))
 	}
 }
-
-private var rendererKey = 0
 
 func metal() -> MTKView {
 	let view = MTKView()
 	let renderer = AAPLRenderer(device: view.device!, format: .r32Float)
-	objc_setAssociatedObject(view, &rendererKey, renderer, .OBJC_ASSOCIATION_RETAIN)
+	view.lifetime = [renderer]
 
 	view.colorPixelFormat = .r32Float
 	view.delegate = renderer

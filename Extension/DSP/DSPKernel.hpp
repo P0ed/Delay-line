@@ -16,9 +16,9 @@ private:
 
 	int maxFrames = 1024;
 
-	Buffer ax = Buffer();
-	Buffer bx = Buffer();
-	Buffer cx = Buffer();
+	float *ax = nullptr;
+	float *bx = nullptr;
+	float *dsp = nullptr;
 	Buffer line = Buffer();
 
 	double sampleRate = 48000;
@@ -31,16 +31,18 @@ public:
 		sampleRate = samplesPerSecond;
 		int len = samplesPerSecond * 1;
 		line.allocate(len);
-		ax.allocate(len);
-		bx.allocate(len);
-		cx.allocate(len);
+		ax = new float[len];
+		bx = new float[len];
+		dsp = new float[512 * 1536];
 	}
 	void deInitialize() {
 		line.deallocate();
-		ax.deallocate();
-		bx.deallocate();
-		cx.deallocate();
+		delete[] ax;
+		delete[] bx;
+		delete[] dsp;
 	}
+
+	float *getDSP() { return dsp; }
 
 	AUValue getParameter(AUParameterAddress address) {
 		switch (address) {
@@ -61,34 +63,32 @@ public:
 
 	void setMusicalContextBlock(AUHostMusicalContextBlock block) { musicalContextBlock = block; }
 
-	void process(std::span<float const*> in, std::span<float *> out, AUEventSampleTime startTime, int cnt) {
-		Buffer in0 = Buffer((float *)in[0], cnt);
-		Buffer out0 = Buffer(out[0], cnt);
-
+	void process(std::span<float const *> in, std::span<float *> out, AUEventSampleTime startTime, int cnt) {
 		if (!speed && !targetSpeed) {
 
 		} if (speed == 1 && targetSpeed == 1) {
-			line.read(out0);
-			if (!hold) line.write(in0);
+			line.read(out[0], cnt);
+			if (!hold) line.write(in[0], cnt);
 			line.move(cnt);
 		} else {
-			speed += (targetSpeed - speed) * cnt / sampleRate * 0.5;
-			if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
 
 			float x0 = 0;
 			float x1 = speed;
 			int lineCnt = speed * cnt;
 
-			line.read(bx.sub(lineCnt));
-			vDSP_vramp(&x0, &x1, ax.data, 1, vDSP_Length(cnt));
-			vDSP_vqint(bx.data, ax.data, 1, out0.data, 1, cnt, lineCnt);
+			line.read(bx, lineCnt);
+			vDSP_vramp(&x0, &x1, ax, 1, vDSP_Length(cnt));
+			vDSP_vqint(bx, ax, 1, out[0], 1, cnt, lineCnt);
 
 			if (!hold) {
 				x1 = speed * cnt / lineCnt;
-				vDSP_vramp(&x0, &x1, ax.data, 1, vDSP_Length(lineCnt));
-				vDSP_vqint(in0.data, ax.data, 1, bx.data, 1, lineCnt, cnt);
-				line.write(bx.sub(lineCnt));
+				vDSP_vramp(&x0, &x1, ax, 1, vDSP_Length(lineCnt));
+				vDSP_vqint(in[0], ax, 1, bx, 1, lineCnt, cnt);
+				line.write(bx, lineCnt);
 			}
+
+			speed += (targetSpeed - speed) * cnt / sampleRate * 2;
+			if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
 
 			line.move(lineCnt);
 		}

@@ -24,6 +24,7 @@
 		5FD81B692A58442B00BD80F6 /* AAPLShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */; };
 		5FD81B6B2A5847D700BD80F6 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5FD81B6A2A5847D700BD80F6 /* MainInterface.storyboard */; };
 		5FD81BD72A58701100BD80F6 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FD81BD62A58701100BD80F6 /* Accelerate.framework */; };
+		5FD81BD92A5899F000BD80F6 /* Gestures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD81BD82A5899F000BD80F6 /* Gestures.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +80,7 @@
 		5FCB650C2A4F4AFF0039E7B1 /* Delay-line-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Delay-line-Info.plist"; sourceTree = SOURCE_ROOT; };
 		5FD81B6A2A5847D700BD80F6 /* MainInterface.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = MainInterface.storyboard; sourceTree = "<group>"; };
 		5FD81BD62A58701100BD80F6 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		5FD81BD82A5899F000BD80F6 /* Gestures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gestures.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +152,7 @@
 				5F2D2E212A4DACBD00125390 /* Info.plist */,
 				5FD81B6A2A5847D700BD80F6 /* MainInterface.storyboard */,
 				5F2D2E1F2A4DACBD00125390 /* AudioUnitViewController.swift */,
+				5FD81BD82A5899F000BD80F6 /* Gestures.swift */,
 				5F2D2E0F2A4DACBD00125390 /* DelayUnit.h */,
 				5F2D2E102A4DACBD00125390 /* DelayUnit.mm */,
 				5F2D2E052A4DACBD00125390 /* Bridging-Header.h */,
@@ -318,6 +321,7 @@
 				5FD81B682A58442800BD80F6 /* AAPLRenderer.m in Sources */,
 				5F2D2E1A2A4DACBD00125390 /* Parameters.swift in Sources */,
 				5FD81B692A58442B00BD80F6 /* AAPLShaders.metal in Sources */,
+				5FD81BD92A5899F000BD80F6 /* Gestures.swift in Sources */,
 				5F2D2E112A4DACBD00125390 /* DelayUnit.mm in Sources */,
 				5F2D2E082A4DACBD00125390 /* ParameterSpecBase.swift in Sources */,
 				5F2D2E202A4DACBD00125390 /* AudioUnitViewController.swift in Sources */,
