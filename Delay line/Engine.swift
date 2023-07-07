@@ -53,10 +53,21 @@ public class Engine {
 
 extension AudioComponentDescription {
 	static let delayLine = AudioComponentDescription(
-		componentType: "aufx".fourCharCode!,
-		componentSubType: "dlln".fourCharCode!,
-		componentManufacturer: "Kost".fourCharCode!,
+		componentType: "aufx".fourCharCode,
+		componentSubType: "dlln".fourCharCode,
+		componentManufacturer: "Kost".fourCharCode,
 		componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
 		componentFlagsMask: 0
 	)
 }
+
+extension String {
+	var fourCharCode: FourCharCode {
+		guard count == 4 && utf8.count == 4 else { fatalError() }
+		var code: FourCharCode = 0
+		for character in self.utf8 { code = code << 8 + FourCharCode(character) }
+		return code
+	}
+}
+
+extension String: Error {}

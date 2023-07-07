@@ -20,16 +20,19 @@ struct ContentView: View {
 	@ObservedObject var model: Model
 
 	var body: some View {
-		switch model.state {
-		case .success(let viewController):
-			ViewControllerRepresentable(
-				viewController: viewController
-			)
-		case .failure(let error):
-			VStack() {
-				Text(error).padding()
+		ZStack {
+			Color.black.ignoresSafeArea()
+			switch model.state {
+			case .success(let viewController):
+				ViewControllerRepresentable(
+					viewController: viewController
+				)
+			case .failure(let error):
+				VStack() {
+					Text(error).padding()
+				}
+				.frame(minWidth: 400, minHeight: 200)
 			}
-			.frame(minWidth: 400, minHeight: 200)
 		}
 	}
 }

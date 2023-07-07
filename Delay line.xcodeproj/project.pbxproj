@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		5F2D2DE32A4DACBB00125390 /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DE22A4DACBB00125390 /* Engine.swift */; };
-		5F2D2DE82A4DACBB00125390 /* StringHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DE72A4DACBB00125390 /* StringHelpers.swift */; };
 		5F2D2DEE2A4DACBB00125390 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DED2A4DACBB00125390 /* Model.swift */; };
 		5F2D2DF22A4DACBB00125390 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DF12A4DACBB00125390 /* App.swift */; };
 		5F2D2DF42A4DACBD00125390 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F2D2DF32A4DACBD00125390 /* Assets.xcassets */; };
@@ -24,6 +23,7 @@
 		5FD81B682A58442800BD80F6 /* AAPLRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC62A57538E00DD29B8 /* AAPLRenderer.m */; };
 		5FD81B692A58442B00BD80F6 /* AAPLShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */; };
 		5FD81B6B2A5847D700BD80F6 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5FD81B6A2A5847D700BD80F6 /* MainInterface.storyboard */; };
+		5FD81BD72A58701100BD80F6 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FD81BD62A58701100BD80F6 /* Accelerate.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,7 +57,6 @@
 		5F090EC92A57538E00DD29B8 /* AAPLShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = AAPLShaders.metal; sourceTree = "<group>"; };
 		5F2D2DD62A4DACBB00125390 /* Delay line.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Delay line.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F2D2DE22A4DACBB00125390 /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
-		5F2D2DE72A4DACBB00125390 /* StringHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringHelpers.swift; sourceTree = "<group>"; };
 		5F2D2DED2A4DACBB00125390 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		5F2D2DF12A4DACBB00125390 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		5F2D2DF32A4DACBD00125390 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -79,6 +78,7 @@
 		5F8A049A2A572B3500488A5A /* Buffer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Buffer.hpp; sourceTree = "<group>"; };
 		5FCB650C2A4F4AFF0039E7B1 /* Delay-line-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Delay-line-Info.plist"; sourceTree = SOURCE_ROOT; };
 		5FD81B6A2A5847D700BD80F6 /* MainInterface.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = MainInterface.storyboard; sourceTree = "<group>"; };
+		5FD81BD62A58701100BD80F6 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +93,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5FD81BD72A58701100BD80F6 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,6 +117,7 @@
 				5F2D2DD82A4DACBB00125390 /* Delay line */,
 				5F2D2E012A4DACBD00125390 /* Extension */,
 				5F2D2DD72A4DACBB00125390 /* Products */,
+				5FD81BD52A58701100BD80F6 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -135,7 +137,6 @@
 				5F2D2DF12A4DACBB00125390 /* App.swift */,
 				5F2D2DED2A4DACBB00125390 /* Model.swift */,
 				5F2D2DE22A4DACBB00125390 /* Engine.swift */,
-				5F2D2DE72A4DACBB00125390 /* StringHelpers.swift */,
 				5F2D2DF32A4DACBD00125390 /* Assets.xcassets */,
 				5F2D2DF82A4DACBD00125390 /* Delay_line.entitlements */,
 			);
@@ -187,6 +188,14 @@
 				5F2D2E152A4DACBD00125390 /* BufferedAudioBus.hpp */,
 			);
 			path = DSP;
+			sourceTree = "<group>";
+		};
+		5FD81BD52A58701100BD80F6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5FD81BD62A58701100BD80F6 /* Accelerate.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -297,7 +306,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5F2D2DEE2A4DACBB00125390 /* Model.swift in Sources */,
-				5F2D2DE82A4DACBB00125390 /* StringHelpers.swift in Sources */,
 				5F2D2DE32A4DACBB00125390 /* Engine.swift in Sources */,
 				5F2D2DF22A4DACBB00125390 /* App.swift in Sources */,
 			);

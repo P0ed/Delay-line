@@ -41,7 +41,7 @@
 														   busType:AUAudioUnitBusTypeOutput
 															busses: @[_outputBus]];
 
-	[self setParameterTree:AUParameterTree.make];
+	[self setupParameterTree:AUParameterTree.make];
 
 	return self;
 }

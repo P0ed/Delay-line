@@ -1,8 +1,12 @@
 import CoreAudioKit
 import os
+import UIKit
+import MetalKit
+import SwiftUI
 
 final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 	var unit: DelayUnit?
+	var lifetime: Any?
 
 	public override func beginRequest(with context: NSExtensionContext) {}
 
@@ -15,15 +19,31 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 	}
 
 	private func setupUI(unit: DelayUnit) {
-		let controller = AUGenericViewController()
-		controller.auAudioUnit = unit
+		let hold = unit.parameterTree?.parameter(withAddress: ParameterAddress.hold.rawValue)
+		let speed = unit.parameterTree?.parameter(withAddress: ParameterAddress.speed.rawValue)
+
+		// ??
+		lifetime = unit.observe(\.allParameterValues, options: [.new]) { object, change in
+			unit.parameterTree?.allParameters.forEach { $0.value = $0.value }
+		}
+
+		let controller = UIHostingController(rootView: VStack {
+			Spacer()
+			Spacer()
+			Button("hold", action: { hold?.value = hold?.value == 0 ? 1 : 0 }).font(.headline)
+			Spacer()
+			Button("+", action: { speed?.value = max(10, speed?.value ?? 0 + 0.4) }).font(.headline)
+			Spacer()
+			Button("-", action: { speed?.value = max(0, speed?.value ?? 0 - 0.4) }).font(.headline)
+			Spacer()
+			Spacer()
+		})
 		addChild(controller)
+		controller.view.frame = view.bounds
 		view.addSubview(controller.view)
 		controller.didMove(toParent: self)
 	}
 }
-
-import MetalKit
 
 private var rendererKey = 0
 

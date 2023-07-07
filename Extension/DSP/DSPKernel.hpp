@@ -4,6 +4,7 @@
 #import <algorithm>
 #import <vector>
 #import <span>
+#import <Accelerate/Accelerate.h>
 
 #import "Extension-Swift.h"
 #import "ParameterAddresses.h"
@@ -17,6 +18,7 @@ private:
 
 	Buffer ax = Buffer();
 	Buffer bx = Buffer();
+	Buffer cx = Buffer();
 	Buffer line = Buffer();
 
 	double sampleRate = 48000;
@@ -31,11 +33,13 @@ public:
 		line.allocate(len);
 		ax.allocate(len);
 		bx.allocate(len);
+		cx.allocate(len);
 	}
 	void deInitialize() {
 		line.deallocate();
 		ax.deallocate();
 		bx.deallocate();
+		cx.deallocate();
 	}
 
 	AUValue getParameter(AUParameterAddress address) {
@@ -58,19 +62,35 @@ public:
 	void setMusicalContextBlock(AUHostMusicalContextBlock block) { musicalContextBlock = block; }
 
 	void process(std::span<float const*> in, std::span<float *> out, AUEventSampleTime startTime, int cnt) {
-		if (speed == 1 && targetSpeed == 1) {
-			line.read(Buffer(out[0], cnt));
-			if (!hold) line.write(Buffer((float *)in[0], cnt));
-			line.offset += cnt;
-		} else {
-			double time = cnt / sampleRate;
-			if (abs(targetSpeed - speed) > 0.02) speed = targetSpeed;
-			else speed += (targetSpeed - speed) * time / 2;
+		Buffer in0 = Buffer((float *)in[0], cnt);
+		Buffer out0 = Buffer(out[0], cnt);
 
-//			line.read(
-//
-//			int lineCnt = speed * cnt;
-//			line.offset += lineCnt;
+		if (!speed && !targetSpeed) {
+
+		} if (speed == 1 && targetSpeed == 1) {
+			line.read(out0);
+			if (!hold) line.write(in0);
+			line.move(cnt);
+		} else {
+			speed += (targetSpeed - speed) * cnt / sampleRate * 0.5;
+			if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
+
+			float x0 = 0;
+			float x1 = speed;
+			int lineCnt = speed * cnt;
+
+			line.read(bx.sub(lineCnt));
+			vDSP_vramp(&x0, &x1, ax.data, 1, vDSP_Length(cnt));
+			vDSP_vqint(bx.data, ax.data, 1, out0.data, 1, cnt, lineCnt);
+
+			if (!hold) {
+				x1 = speed * cnt / lineCnt;
+				vDSP_vramp(&x0, &x1, ax.data, 1, vDSP_Length(lineCnt));
+				vDSP_vqint(in0.data, ax.data, 1, bx.data, 1, lineCnt, cnt);
+				line.write(bx.sub(lineCnt));
+			}
+
+			line.move(lineCnt);
 		}
 	}
 
