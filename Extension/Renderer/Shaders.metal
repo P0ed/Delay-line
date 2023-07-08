@@ -4,7 +4,7 @@
 using namespace metal;
 
 // Include header shared between this Metal shader code and C code executing Metal API commands
-#include "AAPLShaderTypes.h"
+#include "ShaderTypes.h"
 
 struct RasterizerData
 {
@@ -24,8 +24,8 @@ struct RasterizerData
 // Vertex Function
 vertex RasterizerData
 vertexShader(uint vertexID [[ vertex_id ]],
-             constant AAPLVertex *vertexArray [[ buffer(AAPLVertexInputIndexVertices) ]],
-             constant vector_uint2 *viewportSizePointer  [[ buffer(AAPLVertexInputIndexViewportSize) ]])
+             constant Vertex *vertexArray [[ buffer(VertexInputIndexVertices) ]],
+             constant vector_uint2 *viewportSizePointer  [[ buffer(VertexInputIndexViewportSize) ]])
 
 {
 
@@ -56,7 +56,7 @@ vertexShader(uint vertexID [[ vertex_id ]],
 // Fragment function
 fragment float4
 samplingShader(RasterizerData in [[stage_in]],
-               texture2d<half> colorTexture [[ texture(AAPLTextureIndexBaseColor) ]])
+               texture2d<half> colorTexture [[ texture(TextureIndexBaseColor) ]])
 {
     constexpr sampler textureSampler (mag_filter::linear,
                                       min_filter::linear);

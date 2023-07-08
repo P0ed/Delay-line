@@ -1,22 +1,22 @@
-#ifndef AAPLShaderTypes_h
-#define AAPLShaderTypes_h
+#ifndef ShaderTypes_h
+#define ShaderTypes_h
 
 #include <simd/simd.h>
 
 // Buffer index values shared between shader and C code to ensure Metal shader buffer inputs match
 //   Metal API buffer set calls
-typedef enum AAPLVertexInputIndex
+typedef enum VertexInputIndex
 {
-    AAPLVertexInputIndexVertices     = 0,
-    AAPLVertexInputIndexViewportSize = 1,
-} AAPLVertexInputIndex;
+    VertexInputIndexVertices     = 0,
+    VertexInputIndexViewportSize = 1,
+} VertexInputIndex;
 
 // Texture index values shared between shader and C code to ensure Metal shader buffer inputs match
 //   Metal API texture set calls
-typedef enum AAPLTextureIndex
+typedef enum TextureIndex
 {
-    AAPLTextureIndexBaseColor = 0,
-} AAPLTextureIndex;
+    TextureIndexBaseColor = 0,
+} TextureIndex;
 
 //  This structure defines the layout of each vertex in the array of vertices set as an input to the
 //    Metal vertex shader.  Since this header is shared between the .metal shader and C code,
@@ -30,6 +30,6 @@ typedef struct
 
     // 2D texture coordinate
     vector_float2 textureCoordinate;
-} AAPLVertex;
+} Vertex;
 
-#endif /* AAPLShaderTypes_h */
+#endif /* ShaderTypes_h */

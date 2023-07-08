@@ -28,9 +28,9 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 	}
 
 	var unit: DelayUnit?
-	var renderer: AAPLRenderer?
-	var textureView: MTKView?
+	var renderer: Renderer?
 	var imgView: UIImageView?
+	var timer: Timer?
 
 	public override func beginRequest(with context: NSExtensionContext) {}
 
@@ -41,36 +41,24 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		return unit
 	}
 
-	private func setupUI() {
-		let textureView = MTKView(frame: view.bounds, device: MTLCreateSystemDefaultDevice())
-		renderer = MTLCreateSystemDefaultDevice().map { AAPLRenderer(device: $0, format: .bgra8Unorm) }
-		textureView.colorPixelFormat = .bgra8Unorm
-		textureView.isUserInteractionEnabled = false
-		textureView.delegate = renderer
-		view.addSubview(textureView)
-		self.textureView = textureView
+	private let imageData = UnsafeMutablePointer<UInt32>.allocate(capacity: 512 * 1024)
 
+	private func setupUI() {
 		let imgView = UIImageView(frame: view.bounds)
 		imgView.contentMode = .scaleAspectFill
 		view.addSubview(imgView)
 		self.imgView = imgView
 
-//		CADisplayLink(target: self, selector: #selector(update))
-//			.add(to: .main, forMode: .common)
+		timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true, block: { [unit, imageData] _ in
+			unit?.ft { data in memcpy(imageData, data, 512 * 1024 * 4) }
+			imgView.image = Renderer.img(imageData)
+		})
 
 		addGestures()
 	}
 
-	@objc private func update() {
-		if let imgView, let renderer, let data = unit?.ft {
-//			renderer.loadTexture(data, width: 512, height: 1024)
-//			renderer.draw(in: textureView)
-
-			imgView.image = renderer.img(data)
-		}
-	}
-
 	private func addGestures() {
+
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
 				self?.state.holds.toggle()
@@ -80,6 +68,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
 				self?.state.stopped.toggle()
+				self?.state.speed = 1
 			},
 			setupDelegate: { rec, delegate in
 				rec.numberOfTouchesRequired = 2

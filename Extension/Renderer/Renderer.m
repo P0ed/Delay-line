@@ -1,10 +1,10 @@
 @import simd;
 @import MetalKit;
 
-#import "AAPLRenderer.h"
-#import "AAPLShaderTypes.h"
+#import "Renderer.h"
+#import "ShaderTypes.h"
 
-@implementation AAPLRenderer {
+@implementation Renderer {
     id<MTLDevice> _device;
 	MTLPixelFormat _format;
     id<MTLRenderPipelineState> _pipelineState;
@@ -35,7 +35,7 @@
 
 	// Set up a simple MTLBuffer with vertices which include texture coordinates
 	// Pixel positions, Texture coordinates
-	static const AAPLVertex quadVertices[] = {
+	static const Vertex quadVertices[] = {
 		{ {  250,  -250 },  { 1.f, 1.f } },
 		{ { -250,  -250 },  { 0.f, 1.f } },
 		{ { -250,   250 },  { 0.f, 0.f } },
@@ -51,7 +51,7 @@
 									options:MTLResourceStorageModeShared];
 
 	// Calculate the number of vertices by dividing the byte length by the size of each vertex
-	_numVertices = sizeof(quadVertices) / sizeof(AAPLVertex);
+	_numVertices = sizeof(quadVertices) / sizeof(Vertex);
 
 	id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
 	id<MTLFunction> vertexFunction = [defaultLibrary newFunctionWithName:@"vertexShader"];
@@ -119,17 +119,17 @@
 
         [renderEncoder setVertexBuffer:_vertices
                                 offset:0
-                              atIndex:AAPLVertexInputIndexVertices];
+                              atIndex:VertexInputIndexVertices];
 
         [renderEncoder setVertexBytes:&_viewportSize
                                length:sizeof(_viewportSize)
-                              atIndex:AAPLVertexInputIndexViewportSize];
+                              atIndex:VertexInputIndexViewportSize];
 
-        // Set the texture object.  The AAPLTextureIndexBaseColor enum value corresponds
+        // Set the texture object.  The TextureIndexBaseColor enum value corresponds
         ///  to the 'colorMap' argument in the 'samplingShader' function because its
-        //   texture attribute qualifier also uses AAPLTextureIndexBaseColor for its index.
+        //   texture attribute qualifier also uses TextureIndexBaseColor for its index.
         [renderEncoder setFragmentTexture:_texture
-                                  atIndex:AAPLTextureIndexBaseColor];
+                                  atIndex:TextureIndexBaseColor];
 
         // Draw the triangles.
         [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
@@ -146,16 +146,19 @@
     [commandBuffer commit];
 }
 
-- (UIImage *)img:(void *)data {
++ (UIImage *)img:(uint32_t const *)data {
 	CGColorSpaceRef color = CGColorSpaceCreateDeviceRGB();
 	CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, data, 512 * 1024 * 4, NULL);
 
-	CGImageRef img = CGImageCreate(512, 1024, 8, 32, 512 * 4, CGColorSpaceCreateDeviceRGB(), kCGBitmapByteOrderDefault | kCGImageAlphaLast, provider, NULL, false, kCGRenderingIntentDefault);
+	CGImageRef img = CGImageCreate(512, 1024, 8, 32, 512 * 4, CGColorSpaceCreateDeviceRGB(), kCGBitmapByteOrderDefault | kCGImageAlphaFirst, provider, NULL, false, kCGRenderingIntentDefault);
 
 	CGDataProviderRelease(provider);
 	CGColorSpaceRelease(color);
 
-	return [UIImage imageWithCGImage:img];
+	UIImage *image = [UIImage imageWithCGImage:img];
+	CGImageRelease(img);
+
+	return image;
 }
 
 @end

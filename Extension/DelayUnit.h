@@ -2,5 +2,5 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface DelayUnit : AUAudioUnit
-@property (nonnull, readonly, nonatomic) uint32_t *ft;
+- (void)ft:(void (^)(uint32_t const *))access;
 @end

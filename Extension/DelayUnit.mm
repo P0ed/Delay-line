@@ -2,6 +2,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreAudioKit/CoreAudioKit.h>
+#import <os/lock.h>
 
 #import "BufferedAudioBus.hpp"
 #import "DSPKernel.hpp"
@@ -14,7 +15,6 @@
 @property (nonatomic, readonly) AUAudioUnitBus *outputBus;
 @end
 
-
 @implementation DelayUnit {
 	DSPKernel _kernel;
 	BufferedInputBus _inputBus;
@@ -22,7 +22,11 @@
 
 @synthesize parameterTree = _parameterTree;
 
-- (uint32_t *)ft { return _kernel.getFT(); }
+- (void)ft:(void (^)(uint32_t const *))access {
+	os_unfair_lock_lock(&lock);
+	access(_kernel.getFT());
+	os_unfair_lock_unlock(&lock);
+}
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
@@ -36,10 +40,10 @@
 
 	_inputBusArray  = [AUAudioUnitBusArray.alloc initWithAudioUnit:self
 														   busType:AUAudioUnitBusTypeInput
-															busses: @[_inputBus.bus]];
+															busses:@[_inputBus.bus]];
 	_outputBusArray = [AUAudioUnitBusArray.alloc initWithAudioUnit:self
 														   busType:AUAudioUnitBusTypeOutput
-															busses: @[_outputBus]];
+															busses:@[_outputBus]];
 
 	[self setupParameterTree:AUParameterTree.make];
 

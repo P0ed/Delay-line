@@ -2,13 +2,14 @@
 
 #import <AudioToolbox/AudioToolbox.h>
 #import <algorithm>
-#import <vector>
-#import <span>
 #import <Accelerate/Accelerate.h>
+#import <os/lock.h>
 
 #import "Extension-Swift.h"
 #import "ParameterAddresses.h"
 #import "Buffer.hpp"
+
+static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
 
 class DSPKernel {
 private:
@@ -17,8 +18,9 @@ private:
 	float *ax, *bx, *cx, *dx;
 
 	uint32_t *ft;
+	uint32_t *uiFT;
 	char *ftDirty;
-	vDSP_DFT_Setup ftSetup;
+	vDSP_DFT_Setup ftSetup = NULL;
 	const int ftWidth = 512;
 	const int ftHeight = 1024;
 
@@ -34,8 +36,7 @@ private:
 public:
 	void initialize(int inputChannelCount, int outputChannelCount, double samplesPerSecond) {
 		sampleRate = samplesPerSecond;
-		int len = samplesPerSecond * 1;
-		line.allocate(len);
+		line.allocate(samplesPerSecond);
 
 		ax = new float[maxFrames * 4];
 		bx = ax + maxFrames;
@@ -43,18 +44,26 @@ public:
 		dx = cx + maxFrames;
 
 		ft = new uint32_t[ftWidth * ftHeight];
+		uiFT = new uint32_t[ftWidth * ftHeight];
 		ftDirty = new char[ftHeight];
-		ftSetup = vDSP_DFT_zrop_CreateSetup(nullptr, ftWidth * 2, vDSP_DFT_FORWARD);
+		ftSetup = vDSP_DFT_zrop_CreateSetup(NULL, ftWidth * 2, vDSP_DFT_FORWARD);
 	}
 	void deInitialize() {
 		line.deallocate();
 		delete[] ax;
 		delete[] ft;
+		delete[] uiFT;
 		delete[] ftDirty;
 		vDSP_DFT_DestroySetup(ftSetup);
 	}
 
-	uint32_t *getFT() { return ft; }
+	uint32_t const *getFT() {
+		int offset = line.offset * ftHeight / line.length;
+		for (int i = 0; i < ftHeight; ++i)
+			for (int j = 0; j < ftWidth; ++j)
+				uiFT[i * ftWidth + j] = ft[((i + offset) % ftHeight) * ftWidth + (j + ftWidth / 2) % ftWidth];
+		return uiFT;
+	}
 
 	AUValue getParameter(AUParameterAddress address) {
 		switch (address) {
@@ -82,7 +91,7 @@ public:
 		if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
 
 		const int lineCnt = speed * cnt;
-		if (lineCnt < 8) return vDSP_vclr(out0, 1, cnt);
+		if (lineCnt < 32) return vDSP_vclr(out0, 1, cnt);
 
 		if (speed == 1 && targetSpeed == 1) {
 			line.read(out0, cnt);
@@ -110,8 +119,12 @@ public:
 			int idx = (i + line.offset) % line.length;
 			ftDirty[ftHeight * idx / line.length % ftHeight] = 1;
 		}
+
+		if (!os_unfair_lock_trylock(&lock)) return;
+
 		for (int i = 0; i < ftHeight; ++i) if (ftDirty[i]) {
 			vDSP_vclr(ax, 1, ftWidth * 2);
+
 			vDSP_DFT_Execute(ftSetup, line.data + line.length * i / ftHeight, ax, bx, cx);
 
 			DSPSplitComplex t = { bx, cx };
@@ -120,16 +133,15 @@ public:
 			float max = 0;
 			vDSP_maxv(ax, 1, &max, ftWidth);
 			max /= 255;
-			vDSP_vsdiv(bx, 1, &max, ax, 1, ftWidth);
+			vDSP_vsdiv(ax, 1, &max, bx, 1, ftWidth);
 
 			uint32_t *out = ft + ftWidth * i;
-
 			int v = 0xFFFFFFFF;
 			vDSP_vfilli(&v, (int *)out, 1, ftWidth);
-			vDSP_vfixu8(ax, 1, (uint8_t *)out + 0, 4, ftWidth);
-			vDSP_vfixu8(ax, 1, (uint8_t *)out + 1, 4, ftWidth);
-			vDSP_vfixu8(ax, 1, (uint8_t *)out + 2, 4, ftWidth);
+			vDSP_vfixu8(bx, 1, (uint8_t *)out, 4, ftWidth);
 			ftDirty[i] = 0;
 		}
+
+		os_unfair_lock_unlock(&lock);
 	}
 };
