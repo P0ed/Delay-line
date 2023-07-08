@@ -5,7 +5,29 @@ import MetalKit
 import SwiftUI
 
 final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
+
+	struct State {
+		var holds = false
+		var stopped = false
+		var speed = 1 as Float
+		var dSpeed = 0 as Float
+
+		var eHolds: Bool { holds || stopped }
+		var eSpeed: Float { stopped ? 0 : speed + dSpeed }
+	}
+
+	var state = State() {
+		didSet {
+			let hld = state.eHolds
+			if hld != oldValue.eHolds { parameter(.hold)?.value = hld ? 1 : 0 }
+
+			let spd = state.eSpeed
+			if spd != oldValue.eSpeed { parameter(.speed)?.value = max(0, spd) }
+		}
+	}
+
 	var unit: DelayUnit?
+	var renderer: AAPLRenderer?
 
 	public override func beginRequest(with context: NSExtensionContext) {}
 
@@ -17,30 +39,28 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		return unit
 	}
 
-	struct State {
-		var holds = false
-		var stopped = false
-		var speed = 1 as Float
+	private func setupUI(unit: DelayUnit) {
+//		let textureView = MTKView(frame: view.bounds)
+//		let renderer = AAPLRenderer(device: textureView.device!, format: .r32Float)
+//		textureView.colorPixelFormat = .r32Float
+//		textureView.delegate = renderer
+//		textureView.isUserInteractionEnabled = false
+//		view.addSubview(textureView)
+//		self.renderer = renderer
+
+		CADisplayLink(target: self, selector: #selector(update))
+			.add(to: .main, forMode: .common)
+
+		addGestures()
 	}
 
-	var state = State() {
-		didSet {
-			let hld = state.holds || state.stopped ? 1 : 0 as Float
-			let oldHld = oldValue.holds || oldValue.stopped ? 1 : 0 as Float
-			if hld != oldHld { parameter(.hold)?.value = hld }
-
-			let spd = state.stopped ? 0 : state.speed
-			let oldSpd = oldValue.stopped ? 0 : oldValue.speed
-			if spd != oldSpd { parameter(.speed)?.value = spd }
+	@objc private func update() {
+		if let data = unit?.ft {
+			renderer?.loadTexture(data, width: 512, height: 1024)
 		}
 	}
 
-	func parameter(_ address: ParameterAddress) -> AUParameter? {
-		unit?.parameterTree?.parameter(withAddress: address.rawValue)
-	}
-
-	private func setupUI(unit: DelayUnit) {
-
+	private func addGestures() {
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
 				self?.state.holds.toggle()
@@ -63,30 +83,21 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 			handler: { [weak self] recognizer in
 				guard let self, let view = recognizer.view else { return }
 
-				let translation = recognizer.translation(in: view).y
+				let translation = -recognizer.translation(in: view).y
 
 				switch recognizer.state {
 				case .began: state.holds = true
-				case .changed: state.speed = abs(1 - Float(translation) / 256)
-				case .cancelled: state.holds = false
-				case .ended: state.holds = false
+				case .changed: state.dSpeed = Float(translation) / 256
+				case .cancelled, .ended:
+					state.holds = false
+					state.dSpeed = 0
 				default: break
 				}
-			},
-			setupDelegate: { rec, delegate in
-
 			}
 		))
 	}
-}
 
-func metal() -> MTKView {
-	let view = MTKView()
-	let renderer = AAPLRenderer(device: view.device!, format: .r32Float)
-	view.lifetime = [renderer]
-
-	view.colorPixelFormat = .r32Float
-	view.delegate = renderer
-
-	return view
+	private func parameter(_ address: ParameterAddress) -> AUParameter? {
+		unit?.parameterTree?.parameter(withAddress: address.rawValue)
+	}
 }

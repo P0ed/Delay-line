@@ -71,6 +71,10 @@
     return self;
 }
 
+- (void)loadTexture:(float *)data width:(int)width height:(int)height {
+	_texture = [self loadTextureUsing:data width:width height:height];
+}
+
 - (id<MTLTexture>)loadTextureUsing:(float *)data width:(int)width height:(int)height {
 	MTLTextureDescriptor *textureDescriptor = [MTLTextureDescriptor.alloc init];
 	textureDescriptor.pixelFormat = MTLPixelFormatR32Float;

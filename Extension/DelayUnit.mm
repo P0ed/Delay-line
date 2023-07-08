@@ -4,7 +4,6 @@
 #import <CoreAudioKit/CoreAudioKit.h>
 
 #import "BufferedAudioBus.hpp"
-#import "AUProcessHelper.hpp"
 #import "DSPKernel.hpp"
 
 @interface DelayUnit ()
@@ -19,10 +18,11 @@
 @implementation DelayUnit {
 	DSPKernel _kernel;
 	BufferedInputBus _inputBus;
-	std::unique_ptr<AUProcessHelper> _processHelper;
 }
 
 @synthesize parameterTree = _parameterTree;
+
+- (float *)ft { return _kernel.getFT(); }
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
@@ -65,7 +65,7 @@
 
 #pragma mark - AUAudioUnit Overrides
 - (AUAudioFrameCount)maximumFramesToRender { return _kernel.maximumFramesToRender(); }
-- (void)setMaximumFramesToRender:(AUAudioFrameCount)maximumFramesToRender { _kernel.setMaximumFramesToRender(maximumFramesToRender); }
+- (void)setMaximumFramesToRender:(AUAudioFrameCount)maximumFramesToRender {}
 
 - (AUAudioUnitBusArray *)inputBusses { return _inputBusArray; }
 - (AUAudioUnitBusArray *)outputBusses { return _outputBusArray; }
@@ -88,7 +88,6 @@
 	_kernel.initialize(inputChannelCount, outputChannelCount, _outputBus.format.sampleRate);
 	for (AUParameter *param in _parameterTree.allParameters) param.value = _kernel.getParameter(param.address);
 
-	_processHelper = std::make_unique<AUProcessHelper>(_kernel, inputChannelCount, outputChannelCount);
 	return [super allocateRenderResourcesAndReturnError:outError];
 }
 
@@ -100,7 +99,6 @@
 #pragma mark - AUAudioUnit (AUAudioUnitImplementation)
 - (AUInternalRenderBlock)internalRenderBlock {
 	__block DSPKernel *kernel = &_kernel;
-	__block std::unique_ptr<AUProcessHelper> &processHelper = _processHelper;
 	__block BufferedInputBus *input = &_inputBus;
 
 	return ^AUAudioUnitStatus(AudioUnitRenderActionFlags 				*actionFlags,
@@ -118,7 +116,9 @@
 		AUAudioUnitStatus err = input->pullInput(&pullFlags, timestamp, frameCount, 0, pullInputBlock);
 		if (err != 0) return err;
 
-		processHelper->processWithEvents(input->mutableAudioBufferList, outputData, timestamp, frameCount, realtimeEventListHead);
+		AUEventSampleTime now = AUEventSampleTime(timestamp->mSampleTime);
+		kernel->process(input->mutableAudioBufferList, outputData, now, frameCount);
+
 		return noErr;
 	};
 }

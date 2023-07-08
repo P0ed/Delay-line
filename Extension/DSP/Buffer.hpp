@@ -37,7 +37,3 @@ struct Buffer {
 		for (int i = 0; i < length; ++i) (*this)[i] = data[i];
 	}
 };
-
-void copy(float const *src, float *dst, int cnt) {
-	for (int i = 0; i < cnt; ++i) dst[i] = src[i];
-}
