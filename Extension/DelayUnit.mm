@@ -22,7 +22,7 @@
 
 @synthesize parameterTree = _parameterTree;
 
-- (float *)ft { return _kernel.getFT(); }
+- (uint32_t *)ft { return _kernel.getFT(); }
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];

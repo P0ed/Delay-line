@@ -71,11 +71,11 @@
     return self;
 }
 
-- (void)loadTexture:(float *)data width:(int)width height:(int)height {
+- (void)loadTexture:(void *)data width:(int)width height:(int)height {
 	_texture = [self loadTextureUsing:data width:width height:height];
 }
 
-- (id<MTLTexture>)loadTextureUsing:(float *)data width:(int)width height:(int)height {
+- (id<MTLTexture>)loadTextureUsing:(void *)data width:(int)width height:(int)height {
 	MTLTextureDescriptor *textureDescriptor = [MTLTextureDescriptor.alloc init];
 	textureDescriptor.pixelFormat = MTLPixelFormatR32Float;
 	textureDescriptor.width = width;
@@ -94,6 +94,7 @@
 				mipmapLevel:0
 				  withBytes:data
 				bytesPerRow:bytesPerRow];
+
 	return texture;
 }
 
@@ -145,4 +146,17 @@
     [commandBuffer commit];
 }
 
+- (UIImage *)img:(void *)data {
+	CGColorSpaceRef color = CGColorSpaceCreateDeviceRGB();
+	CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, data, 512 * 1024 * 4, NULL);
+
+	CGImageRef img = CGImageCreate(512, 1024, 8, 32, 512 * 4, CGColorSpaceCreateDeviceRGB(), kCGBitmapByteOrderDefault | kCGImageAlphaLast, provider, NULL, false, kCGRenderingIntentDefault);
+
+	CGDataProviderRelease(provider);
+	CGColorSpaceRelease(color);
+
+	return [UIImage imageWithCGImage:img];
+}
+
 @end
+

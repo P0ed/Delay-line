@@ -8,11 +8,12 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 
 	struct State {
 		var holds = false
+		var dragged = false
 		var stopped = false
 		var speed = 1 as Float
 		var dSpeed = 0 as Float
 
-		var eHolds: Bool { holds || stopped }
+		var eHolds: Bool { holds || stopped || dragged }
 		var eSpeed: Float { stopped ? 0 : speed + dSpeed }
 	}
 
@@ -22,41 +23,50 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 			if hld != oldValue.eHolds { parameter(.hold)?.value = hld ? 1 : 0 }
 
 			let spd = state.eSpeed
-			if spd != oldValue.eSpeed { parameter(.speed)?.value = max(0, spd) }
+			if spd != oldValue.eSpeed { parameter(.speed)?.value = min(max(spd, 0), 4) }
 		}
 	}
 
 	var unit: DelayUnit?
 	var renderer: AAPLRenderer?
+	var textureView: MTKView?
+	var imgView: UIImageView?
 
 	public override func beginRequest(with context: NSExtensionContext) {}
 
 	@objc public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
 		let unit = try DelayUnit(componentDescription: componentDescription, options: [])
 		self.unit = unit
-		DispatchQueue.main.async { self.setupUI(unit: unit) }
-
+		DispatchQueue.main.async { self.setupUI() }
 		return unit
 	}
 
-	private func setupUI(unit: DelayUnit) {
-//		let textureView = MTKView(frame: view.bounds)
-//		let renderer = AAPLRenderer(device: textureView.device!, format: .r32Float)
-//		textureView.colorPixelFormat = .r32Float
-//		textureView.delegate = renderer
-//		textureView.isUserInteractionEnabled = false
-//		view.addSubview(textureView)
-//		self.renderer = renderer
+	private func setupUI() {
+		let textureView = MTKView(frame: view.bounds, device: MTLCreateSystemDefaultDevice())
+		renderer = MTLCreateSystemDefaultDevice().map { AAPLRenderer(device: $0, format: .bgra8Unorm) }
+		textureView.colorPixelFormat = .bgra8Unorm
+		textureView.isUserInteractionEnabled = false
+		textureView.delegate = renderer
+		view.addSubview(textureView)
+		self.textureView = textureView
 
-		CADisplayLink(target: self, selector: #selector(update))
-			.add(to: .main, forMode: .common)
+		let imgView = UIImageView(frame: view.bounds)
+		imgView.contentMode = .scaleAspectFill
+		view.addSubview(imgView)
+		self.imgView = imgView
+
+//		CADisplayLink(target: self, selector: #selector(update))
+//			.add(to: .main, forMode: .common)
 
 		addGestures()
 	}
 
 	@objc private func update() {
-		if let data = unit?.ft {
-			renderer?.loadTexture(data, width: 512, height: 1024)
+		if let imgView, let renderer, let data = unit?.ft {
+//			renderer.loadTexture(data, width: 512, height: 1024)
+//			renderer.draw(in: textureView)
+
+			imgView.image = renderer.img(data)
 		}
 	}
 
@@ -64,9 +74,6 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
 				self?.state.holds.toggle()
-			},
-			setupDelegate: { rec, delegate in
-				rec.numberOfTapsRequired = 1
 			}
 		))
 
@@ -75,7 +82,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				self?.state.stopped.toggle()
 			},
 			setupDelegate: { rec, delegate in
-				rec.numberOfTapsRequired = 2
+				rec.numberOfTouchesRequired = 2
 			}
 		))
 
@@ -86,10 +93,10 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				let translation = -recognizer.translation(in: view).y
 
 				switch recognizer.state {
-				case .began: state.holds = true
+				case .began: state.dragged = true
 				case .changed: state.dSpeed = Float(translation) / 256
 				case .cancelled, .ended:
-					state.holds = false
+					state.dragged = false
 					state.dSpeed = 0
 				default: break
 				}

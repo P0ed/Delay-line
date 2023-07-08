@@ -16,7 +16,7 @@ private:
 
 	float *ax, *bx, *cx, *dx;
 
-	float *ft;
+	uint32_t *ft;
 	char *ftDirty;
 	vDSP_DFT_Setup ftSetup;
 	const int ftWidth = 512;
@@ -42,19 +42,19 @@ public:
 		cx = bx + maxFrames;
 		dx = cx + maxFrames;
 
-		ft = new float[ftWidth * ftHeight];
+		ft = new uint32_t[ftWidth * ftHeight];
 		ftDirty = new char[ftHeight];
-//		ftSetup = vDSP_DFT_zrop_CreateSetup(nullptr, ftWidth * 2, vDSP_DFT_FORWARD);
+		ftSetup = vDSP_DFT_zrop_CreateSetup(nullptr, ftWidth * 2, vDSP_DFT_FORWARD);
 	}
 	void deInitialize() {
 		line.deallocate();
 		delete[] ax;
 		delete[] ft;
 		delete[] ftDirty;
-//		vDSP_DFT_DestroySetup(ftSetup);
+		vDSP_DFT_DestroySetup(ftSetup);
 	}
 
-	float *getFT() { return ft; }
+	uint32_t *getFT() { return ft; }
 
 	AUValue getParameter(AUParameterAddress address) {
 		switch (address) {
@@ -77,11 +77,14 @@ public:
 	void process(AudioBufferList *in, AudioBufferList *out, AUEventSampleTime startTime, int cnt) {
 		float const *const in0 = (float *)in->mBuffers[0].mData;
 		float *const out0 = (float *)out->mBuffers[0].mData;
+
+		speed += (targetSpeed - speed) * cnt / sampleRate * 2;
+		if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
+
 		const int lineCnt = speed * cnt;
+		if (lineCnt < 8) return vDSP_vclr(out0, 1, cnt);
 
-		if (!speed && !targetSpeed) {
-
-		} if (speed == 1 && targetSpeed == 1) {
+		if (speed == 1 && targetSpeed == 1) {
 			line.read(out0, cnt);
 			if (!hold) line.write(in0, cnt);
 		} else {
@@ -96,24 +99,37 @@ public:
 				vDSP_vqint(in0, ax, 1, bx, 1, lineCnt, cnt);
 				line.write(bx, lineCnt);
 			}
-
-			speed += (targetSpeed - speed) * cnt / sampleRate * 2;
-			if (abs(targetSpeed - speed) < 0.01) speed = targetSpeed;
 		}
 
-//		if (!hold) for (int i = 0; i < ftHeight; ++i) {
-//			int bin = line.length / ftHeight;
-//			int b0 = bin * i, b1 = bin * (i + 1) - 1;
-//			int x0 = line.offset, x1 = (line.offset + lineCnt) % line.length;
-//			ftDirty[i] = (b0 > x0 && b0 <= x1) || (b1 > x0 && b1 <= x1);
-//		}
-
-//		for (int i = 0; i < ftHeight; ++i) if (ftDirty[i]) {
-//			line.read(ax, ftWidth * 2);
-//			vDSP_vclr(bx, 1, ftWidth * 2);
-//			vDSP_DFT_Execute(ftSetup, ax, bx, ft + ftWidth * i, bx);
-//		}
-
+		updateFT(lineCnt);
 		line.move(lineCnt);
+	}
+
+	void updateFT(int cnt) {
+		if (!hold) for (int i = 0; i < cnt; ++i) {
+			int idx = (i + line.offset) % line.length;
+			ftDirty[ftHeight * idx / line.length % ftHeight] = 1;
+		}
+		for (int i = 0; i < ftHeight; ++i) if (ftDirty[i]) {
+			vDSP_vclr(ax, 1, ftWidth * 2);
+			vDSP_DFT_Execute(ftSetup, line.data + line.length * i / ftHeight, ax, bx, cx);
+
+			DSPSplitComplex t = { bx, cx };
+			vDSP_zaspec(&t, ax, ftWidth);
+
+			float max = 0;
+			vDSP_maxv(ax, 1, &max, ftWidth);
+			max /= 255;
+			vDSP_vsdiv(bx, 1, &max, ax, 1, ftWidth);
+
+			uint32_t *out = ft + ftWidth * i;
+
+			int v = 0xFFFFFFFF;
+			vDSP_vfilli(&v, (int *)out, 1, ftWidth);
+			vDSP_vfixu8(ax, 1, (uint8_t *)out + 0, 4, ftWidth);
+			vDSP_vfixu8(ax, 1, (uint8_t *)out + 1, 4, ftWidth);
+			vDSP_vfixu8(ax, 1, (uint8_t *)out + 2, 4, ftWidth);
+			ftDirty[i] = 0;
+		}
 	}
 };
