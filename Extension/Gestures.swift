@@ -54,48 +54,18 @@ public final class GestureRecognizerDelegate<ConcreteRecognizer: UIGestureRecogn
 	}
 }
 
-import UIKit.UIGestureRecognizerSubclass
-
-public final class TouchGestureRecognizer: UIGestureRecognizer {
-	private let moveThreshold = 10 as CGFloat
-	private var touchLocation = nil as CGPoint?
-
-	public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
-		if state == .possible { state = .began }
-		touchLocation = touches.first?.location(in: view)
-	}
-	public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
-		guard let initial = touchLocation, let to = touches.first?.location(in: view),
-		   max(abs(to.x - initial.x), abs(to.y - initial.y)) > moveThreshold
-		else { return }
-		state = .failed
-	}
-	public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
-		state = .recognized
-	}
-	public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
-		state = .cancelled
-	}
-}
-
 final class ActionTrampoline<A>: NSObject {
 	private let action: (A) -> Void
 	var selector: Selector { #selector(objCAction) }
-
 	init(_ action: @escaping (A) -> Void) { self.action = action }
 	@objc private func objCAction(_ sender: Any) { action(sender as! A) }
 }
 
 extension NSObject {
-
 	private static var lifetimeKey = 0
 
 	var lifetime: [Any] {
-		get {
-			(objc_getAssociatedObject(self, &Self.lifetimeKey) as? [Any]) ?? []
-		}
-		set {
-			objc_setAssociatedObject(self, &Self.lifetimeKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-		}
+		get { (objc_getAssociatedObject(self, &Self.lifetimeKey) as? [Any]) ?? [] }
+		set { objc_setAssociatedObject(self, &Self.lifetimeKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
 	}
 }

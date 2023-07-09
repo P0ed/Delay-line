@@ -4,6 +4,9 @@ import UIKit
 import MetalKit
 import SwiftUI
 
+private var log: [Int32] = .init(repeating: 0, count: 64)
+private var idx = 0
+
 final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 
 	struct State {
@@ -12,47 +15,49 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		var stopped = false
 		var speed = 1 as Float
 		var dSpeed = 0 as Float
+		var offset = 0 as Float
 
-		var eHolds: Bool { holds || stopped || dragged }
-		var eSpeed: Float { stopped ? 0 : speed + dSpeed }
+		var eHolds: Float { holds || stopped || dragged ? 1 : 0 }
+		var eSpeed: Float { stopped ? 0 : min(max(speed + dSpeed, 0), 4) }
 	}
 
-	var state = State() {
+	private var setValue: (ParameterAddress, AUValue) -> Void = { _, _ in }
+	private var state = State() {
 		didSet {
-			let hld = state.eHolds
-			if hld != oldValue.eHolds { parameter(.hold)?.value = hld ? 1 : 0 }
-
-			let spd = state.eSpeed
-			if spd != oldValue.eSpeed { parameter(.speed)?.value = min(max(spd, 0), 4) }
+			if state.eHolds != oldValue.eHolds { setValue(.hold, state.eHolds) }
+			if state.eSpeed != oldValue.eSpeed { setValue(.speed, state.eSpeed) }
 		}
 	}
 
-	var unit: DelayUnit?
-	var renderer: Renderer?
-	var imgView: UIImageView?
-	var timer: Timer?
-
-	public override func beginRequest(with context: NSExtensionContext) {}
-
 	@objc public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
 		let unit = try DelayUnit(componentDescription: componentDescription, options: [])
-		self.unit = unit
-		DispatchQueue.main.async { self.setupUI() }
+		setValue = { unit.parameterTree?.parameter(withAddress: $0.rawValue)?.value = $1 }
+		DispatchQueue.main.async { self.setupUI(unit: unit) }
 		return unit
 	}
 
-	private let imageData = UnsafeMutablePointer<UInt32>.allocate(capacity: 512 * 1024)
+	private func setupUI(unit: DelayUnit) {
+		let img = { [bounds = view.bounds] in
+			let view = UIImageView(frame: bounds.intersection(bounds
+				.offsetBy(dx: $0 * bounds.width / 2, dy: 0)
+			))
+			view.transform = .identity.scaledBy(x: $0, y: 1)
+			return view
+		}
+		let left = img(-1)
+		let right = img(1)
+		view.addSubview(left)
+		view.addSubview(right)
 
-	private func setupUI() {
-		let imgView = UIImageView(frame: view.bounds)
-		imgView.contentMode = .scaleAspectFill
-		view.addSubview(imgView)
-		self.imgView = imgView
-
-		timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true, block: { [unit, imageData] _ in
-			unit?.ft { data in memcpy(imageData, data, 512 * 1024 * 4) }
-			imgView.image = Renderer.img(imageData)
-		})
+		lifetime += [Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true, block: { _ in
+			let ft = unit.ft()
+			self.state.offset = Float(ft.rowOffset) / Float(ft.rows)
+			let image = UIImage.grayscaleImage(withData: ft.data, width: ft.cols, height: ft.rows)
+			left.image = image
+			right.image = image
+			log[idx] = ft.rowOffset
+			idx = (idx + 1) % 64
+		})]
 
 		addGestures()
 	}
@@ -64,7 +69,6 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				self?.state.holds.toggle()
 			}
 		))
-
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
 				self?.state.stopped.toggle()
@@ -74,7 +78,12 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				rec.numberOfTouchesRequired = 2
 			}
 		))
-
+		view.addGestureRecognizer(UITapGestureRecognizer(
+			handler: { [weak self] _ in self?.state.speed = self?.state.speed == 1 ? 2 : 1 },
+			setupDelegate: { rec, delegate in
+				rec.numberOfTouchesRequired = 3
+			}
+		))
 		view.addGestureRecognizer(UIPanGestureRecognizer(
 			handler: { [weak self] recognizer in
 				guard let self, let view = recognizer.view else { return }
@@ -91,9 +100,5 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				}
 			}
 		))
-	}
-
-	private func parameter(_ address: ParameterAddress) -> AUParameter? {
-		unit?.parameterTree?.parameter(withAddress: address.rawValue)
 	}
 }

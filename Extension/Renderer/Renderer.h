@@ -1,9 +1,7 @@
-#import <MetalKit/MetalKit.h>
+#import <UIKit/UIKit.h>
 
-@interface Renderer : NSObject<MTKViewDelegate>
+@interface UIImage (Renderer)
 
-- (nonnull instancetype)initWithDevice:(nonnull id <MTLDevice>)device format:(MTLPixelFormat)format;
-- (void)loadTexture:(nonnull void *)data width:(int)width height:(int)height;
-+ (UIImage *_Nonnull)img:(uint32_t const * _Nonnull)data;
++ (UIImage *_Nonnull)grayscaleImageWithData:(const char * _Nonnull)data width:(int)width height:(int)height;
 
 @end

@@ -1,6 +1,13 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
 
+typedef struct {
+	const char *const data;
+	int const rows;
+	int const cols;
+	int const rowOffset;
+} UIFT;
+
 @interface DelayUnit : AUAudioUnit
-- (void)ft:(void (^)(uint32_t const *))access;
+- (UIFT)ft;
 @end

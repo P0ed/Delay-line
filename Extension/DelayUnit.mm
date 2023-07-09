@@ -18,19 +18,33 @@
 @implementation DelayUnit {
 	DSPKernel _kernel;
 	BufferedInputBus _inputBus;
+	char *_uiData;
 }
 
 @synthesize parameterTree = _parameterTree;
 
-- (void)ft:(void (^)(uint32_t const *))access {
+- (UIFT)ft {
 	os_unfair_lock_lock(&lock);
-	access(_kernel.getFT());
+	int offset = _kernel.ftOffset;
+	char *ft = _kernel.ft;
+	for (int i = 0; i < ftHeight; ++i)
+		for (int j = 0; j < ftWidth; ++j)
+			_uiData[i * ftWidth + j] = ft[((i + offset) % ftHeight) * ftWidth + j];
 	os_unfair_lock_unlock(&lock);
+
+	return (UIFT){
+		.data = _uiData,
+		.rows = ftHeight,
+		.cols = ftWidth,
+		.rowOffset = offset
+	};
 }
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
 	if (!self) return nil;
+
+	_uiData = new char[ftWidth * ftHeight];
 
 	AVAudioFormat *format = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:2];
 	_outputBus = [AUAudioUnitBus.alloc initWithFormat:format error:nil];
@@ -48,6 +62,10 @@
 	[self setupParameterTree:AUParameterTree.make];
 
 	return self;
+}
+
+- (void)dealloc {
+	delete[] _uiData;
 }
 
 - (void)setupParameterTree:(AUParameterTree *)parameterTree {
@@ -87,7 +105,6 @@
 		return NO;
 	}
 	_inputBus.allocateRenderResources(self.maximumFramesToRender);
-	_kernel.setMusicalContextBlock(self.musicalContextBlock);
 
 	_kernel.initialize(inputChannelCount, outputChannelCount, _outputBus.format.sampleRate);
 	for (AUParameter *param in _parameterTree.allParameters) param.value = _kernel.getParameter(param.address);
