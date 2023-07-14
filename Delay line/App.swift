@@ -10,6 +10,8 @@ final class App: SwiftUI.App {
     var body: some Scene {
         WindowGroup {
 			ContentView(model: model)
+				.statusBarHidden()
+				.persistentSystemOverlays(.hidden)
 				.onAppear { UIApplication.shared.isIdleTimerDisabled = true }
 				.onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         }
@@ -21,17 +23,12 @@ struct ContentView: View {
 
 	var body: some View {
 		ZStack {
-			Color.black.ignoresSafeArea()
 			switch model.state {
 			case .success(let viewController):
-				ViewControllerRepresentable(
-					viewController: viewController
-				)
+				ViewControllerRepresentable(viewController: viewController)
+					.ignoresSafeArea()
 			case .failure(let error):
-				VStack() {
-					Text(error).padding()
-				}
-				.frame(minWidth: 400, minHeight: 200)
+				VStack() { Text(error).padding() }
 			}
 		}
 	}

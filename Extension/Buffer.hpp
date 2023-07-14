@@ -1,27 +1,11 @@
-#pragma once
-
-#import <Accelerate/Accelerate.h>
-
 struct Buffer {
-	float *data;
-	int length;
-	int offset;
+	float *data = nullptr;
+	int length = 0;
+	int offset = 0;
 
-	Buffer(float *data = nullptr, int length = 0, int offset = 0) {
-		this->data = data;
-		this->length = length;
-		this->offset = offset;
-	}
-
-	void allocate(int len) {
+	Buffer(int len = 0) {
 		data = len ? new float[len] : nullptr;
 		length = len;
-		offset = 0;
-	}
-	void deallocate() {
-		delete[] data;
-		data = nullptr;
-		length = 0;
 		offset = 0;
 	}
 

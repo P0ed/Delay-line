@@ -1,35 +1,39 @@
 #import "DelayUnit.h"
-
-#import <AVFoundation/AVFoundation.h>
-#import <CoreAudioKit/CoreAudioKit.h>
-#import <os/lock.h>
-
-#import "BufferedAudioBus.hpp"
 #import "DSPKernel.hpp"
+#import <CoreAudioKit/CoreAudioKit.h>
+#import <AVFoundation/AVFoundation.h>
+#import <os/lock.h>
+#import "Extension-Swift.h"
+
 
 @interface DelayUnit ()
 
 @property (nonatomic, readwrite) AUParameterTree *parameterTree;
 @property AUAudioUnitBusArray *inputBusArray;
 @property AUAudioUnitBusArray *outputBusArray;
+@property (nonatomic, readonly) AUAudioUnitBus *inputBus;
 @property (nonatomic, readonly) AUAudioUnitBus *outputBus;
+@property (nonatomic, readonly) AVAudioPCMBuffer *pcmBuffer;
 @end
 
 @implementation DelayUnit {
 	DSPKernel _kernel;
-	BufferedInputBus _inputBus;
-	char *_uiData;
+//	char _uiData[ftHeight * ftWidth];
+//	float _buffer[maxFrames];
 }
+
+char _uiData[ftHeight * ftWidth];
+float _buffer[maxFrames];
 
 @synthesize parameterTree = _parameterTree;
 
 - (UIFT)ft {
 	os_unfair_lock_lock(&lock);
-	int offset = _kernel.ftOffset;
+	int offset = abs(_kernel.ftOffset) % ftHeight;
+
 	char *ft = _kernel.ft;
-	for (int i = 0; i < ftHeight; ++i)
-		for (int j = 0; j < ftWidth; ++j)
-			_uiData[i * ftWidth + j] = ft[((i + offset) % ftHeight) * ftWidth + j];
+	if (ft) for (int i = 0; i < ftHeight; ++i) for (int j = 0; j < ftWidth; ++j)
+		_uiData[i * ftWidth + j] = ft[((i + offset) % ftHeight) * ftWidth + j];
 	os_unfair_lock_unlock(&lock);
 
 	return (UIFT){
@@ -44,17 +48,15 @@
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
 	if (!self) return nil;
 
-	_uiData = new char[ftWidth * ftHeight];
+	auto const inFmt = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:1];
+	_inputBus = [AUAudioUnitBus.alloc initWithFormat:inFmt error:nil];
 
-	AVAudioFormat *format = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:2];
-	_outputBus = [AUAudioUnitBus.alloc initWithFormat:format error:nil];
-	_outputBus.maximumChannelCount = 8;
-
-	_inputBus.init(format, 8);
+	auto const outFmt = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:2];
+	_outputBus = [AUAudioUnitBus.alloc initWithFormat:outFmt error:nil];
 
 	_inputBusArray  = [AUAudioUnitBusArray.alloc initWithAudioUnit:self
 														   busType:AUAudioUnitBusTypeInput
-															busses:@[_inputBus.bus]];
+															busses:@[_inputBus]];
 	_outputBusArray = [AUAudioUnitBusArray.alloc initWithAudioUnit:self
 														   busType:AUAudioUnitBusTypeOutput
 															busses:@[_outputBus]];
@@ -62,10 +64,6 @@
 	[self setupParameterTree:AUParameterTree.make];
 
 	return self;
-}
-
-- (void)dealloc {
-	delete[] _uiData;
 }
 
 - (void)setupParameterTree:(AUParameterTree *)parameterTree {
@@ -86,26 +84,15 @@
 }
 
 #pragma mark - AUAudioUnit Overrides
-- (AUAudioFrameCount)maximumFramesToRender { return _kernel.maximumFramesToRender(); }
+- (AUAudioFrameCount)maximumFramesToRender { return maxFrames; }
 - (void)setMaximumFramesToRender:(AUAudioFrameCount)maximumFramesToRender {}
 
 - (AUAudioUnitBusArray *)inputBusses { return _inputBusArray; }
 - (AUAudioUnitBusArray *)outputBusses { return _outputBusArray; }
 
 - (BOOL)allocateRenderResourcesAndReturnError:(NSError **)outError {
-	const auto inputChannelCount = [self.inputBusses objectAtIndexedSubscript:0].format.channelCount;
-	const auto outputChannelCount = [self.outputBusses objectAtIndexedSubscript:0].format.channelCount;
-
-	if (outputChannelCount != inputChannelCount) {
-		if (outError) {
-			*outError = [NSError errorWithDomain:NSOSStatusErrorDomain code:kAudioUnitErr_FailedInitialization userInfo:nil];
-		}
-		self.renderResourcesAllocated = NO;
-
-		return NO;
-	}
-	_inputBus.allocateRenderResources(self.maximumFramesToRender);
-
+	const auto inputChannelCount = _inputBus.format.channelCount;
+	const auto outputChannelCount = _outputBus.format.channelCount;
 	_kernel.initialize(inputChannelCount, outputChannelCount, _outputBus.format.sampleRate);
 	for (AUParameter *param in _parameterTree.allParameters) param.value = _kernel.getParameter(param.address);
 
@@ -120,7 +107,7 @@
 #pragma mark - AUAudioUnit (AUAudioUnitImplementation)
 - (AUInternalRenderBlock)internalRenderBlock {
 	__block DSPKernel *kernel = &_kernel;
-	__block BufferedInputBus *input = &_inputBus;
+	__block float *buffer = _buffer;
 
 	return ^AUAudioUnitStatus(AudioUnitRenderActionFlags 				*actionFlags,
 							  const AudioTimeStamp       				*timestamp,
@@ -128,17 +115,25 @@
 							  NSInteger                   				outputBusNumber,
 							  AudioBufferList            				*outputData,
 							  const AURenderEvent        				*realtimeEventListHead,
-							  AURenderPullInputBlock __unsafe_unretained pullInputBlock) {
+							  AURenderPullInputBlock __unsafe_unretained pullInput) {
 
-		AudioUnitRenderActionFlags pullFlags = 0;
+		if (frameCount > maxFrames) return kAudioUnitErr_TooManyFramesToProcess;
+		if (!pullInput) return kAudioUnitErr_NoConnection;
 
-		if (frameCount > kernel->maximumFramesToRender()) return kAudioUnitErr_TooManyFramesToProcess;
-
-		AUAudioUnitStatus err = input->pullInput(&pullFlags, timestamp, frameCount, 0, pullInputBlock);
-		if (err != 0) return err;
+		AudioBufferList input = { .mNumberBuffers = 1, .mBuffers = {{
+			.mNumberChannels = 1,
+			.mDataByteSize = UInt32(frameCount * sizeof(float)),
+			.mData = buffer
+		}}};
+		AUAudioUnitStatus err = pullInput(actionFlags, timestamp, frameCount, 0, &input);
+		if (err) return err;
 
 		AUEventSampleTime now = AUEventSampleTime(timestamp->mSampleTime);
-		kernel->process(input->mutableAudioBufferList, outputData, now, frameCount);
+		kernel->process((float *)input.mBuffers[0].mData,
+						(float *)outputData->mBuffers[0].mData,
+						(float *)outputData->mBuffers[1].mData,
+						now,
+						frameCount);
 
 		return noErr;
 	};

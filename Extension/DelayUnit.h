@@ -1,5 +1,4 @@
 #import <AudioToolbox/AudioToolbox.h>
-#import <AVFoundation/AVFoundation.h>
 
 typedef struct {
 	const char *const data;

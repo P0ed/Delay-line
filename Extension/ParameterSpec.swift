@@ -6,7 +6,7 @@ public protocol NodeSpec {}
 extension NodeSpec {
     static func validateID(_ name: String) -> String {
         let msg = "Parameter identifier should: not be empty, begin with a letter, and only contain alpha numeric characters or underscores. Hint: Use camelCase."
-        assert(name.isAlphanumeric(), msg)
+        assert(name.isAlphanumeric, msg)
         return name
     }
 }
@@ -147,4 +147,19 @@ extension AUParameterTree {
     @objc static func make() -> AUParameterTree {
         AUParameterTree.createTree(withChildren: parameterSpecs.children.createAUParameterNodes())
     }
+}
+
+private extension String {
+	var range: NSRange {
+		NSRange(location: 0, length: count)
+	}
+
+	var isAlphanumeric: Bool {
+		if self.isEmpty { return false }
+		let regex = try! NSRegularExpression(pattern: "^[a-zA-Z0-9_-]*$", options: .caseInsensitive)
+		guard regex.firstMatch(in: self, options: [], range: range) != nil else {
+			return false
+		}
+		return true
+	}
 }

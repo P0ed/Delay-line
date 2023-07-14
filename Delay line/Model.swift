@@ -1,31 +1,80 @@
 import SwiftUI
-import CoreMIDI
-import AudioToolbox
+import Foundation
+import CoreAudioKit
 import AVFoundation
 
 final class Model: ObservableObject {
+	private var unit: AVAudioUnit?
+	private var engine: AVAudioEngine?
+
 	@Published private(set) var state: Result<UIViewController, String> = .failure("No Audio Unit loaded..")
 
-	private let engine: Engine
-
     init() {
-		AVAudioSession.activate()
+		instantiate()
+	}
 
-		engine = Engine()
-		engine.setup { [self] result in
-			state = result.mapError { $0 as? String ?? $0.localizedDescription }
+	private func instantiate() {
+		let lookup = { AVAudioUnitComponentManager.shared().components(matching: .delayLine).first }
+		let assign = { result in DispatchQueue.main.async { self.state = result } }
+		guard lookup() != nil else { return assign(.failure("Failed to find component")) }
+
+		AVAudioUnit.instantiate(with: .delayLine, options: .loadOutOfProcess) { unit, error in
+			guard let unit, error == nil else { return assign(.failure(error?.localizedDescription ?? "Unknown error")) }
+
+			self.unit = unit
+			self.connect(unit: unit)
+
+			unit.auAudioUnit.requestViewController { controller in
+				assign(controller.map { .success($0) } ?? .failure("nil"))
+			}
 		}
-    }
-}
+	}
 
-private extension AVAudioSession {
+	private func connect(unit: AVAudioUnit) {
+		do {
+			let session = AVAudioSession.sharedInstance()
+			try session.setCategory(.multiRoute, mode: .default)
+//			try session.setPreferredSampleRate(96000)
+			try session.setActive(true)
 
-	static func activate() {
-		let session = AVAudioSession.sharedInstance()
-		try! session.setCategory(.playAndRecord, mode: .default)
-		session.availableInputs?.forEach { i in
-			if i.portType == .usbAudio { try! session.setPreferredInput(i) }
+			try session.availableInputs?.forEach { i in
+				if i.portType == .usbAudio { try session.setPreferredInput(i) }
+			}
+
+//			try session.setPreferredInputNumberOfChannels(1)
+//			try session.setPreferredOutputNumberOfChannels(2)
+
+			let engine = AVAudioEngine()
+			engine.attach(unit)
+			engine.connect(engine.inputNode, to: unit, format: engine.inputNode.inputFormat(forBus: 0))
+			engine.connect(unit, to: engine.mainMixerNode, format: engine.outputNode.outputFormat(forBus: 0))
+
+			try engine.start()
+			self.engine = engine
+
+		} catch {
+			print(error)
 		}
-		try! session.setActive(true)
 	}
 }
+
+extension AudioComponentDescription {
+	static let delayLine = AudioComponentDescription(
+		componentType: "aufx".fourCharCode,
+		componentSubType: "dlln".fourCharCode,
+		componentManufacturer: "Kost".fourCharCode,
+		componentFlags: AudioComponentFlags.sandboxSafe.rawValue,
+		componentFlagsMask: 0
+	)
+}
+
+extension String {
+	var fourCharCode: FourCharCode {
+		guard count == 4 && utf8.count == 4 else { fatalError() }
+		var code: FourCharCode = 0
+		for character in self.utf8 { code = code << 8 + FourCharCode(character) }
+		return code
+	}
+}
+
+extension String: Error {}

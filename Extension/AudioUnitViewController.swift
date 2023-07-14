@@ -1,11 +1,7 @@
+import UIKit
+import AudioToolbox
 import CoreAudioKit
 import os
-import UIKit
-import MetalKit
-import SwiftUI
-
-private var log: [Int32] = .init(repeating: 0, count: 64)
-private var idx = 0
 
 final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 
@@ -14,18 +10,14 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		var dragged = false
 		var stopped = false
 		var speed = 1 as Float
-		var dSpeed = 0 as Float
 		var offset = 0 as Float
-
-		var eHolds: Float { holds || stopped || dragged ? 1 : 0 }
-		var eSpeed: Float { stopped ? 0 : min(max(speed + dSpeed, 0), 4) }
 	}
 
 	private var setValue: (ParameterAddress, AUValue) -> Void = { _, _ in }
 	private var state = State() {
 		didSet {
-			if state.eHolds != oldValue.eHolds { setValue(.hold, state.eHolds) }
-			if state.eSpeed != oldValue.eSpeed { setValue(.speed, state.eSpeed) }
+			if state.holds != oldValue.holds { setValue(.hold, state.holds ? 1 : 0) }
+			if state.speed != oldValue.speed { setValue(.speed, state.speed) }
 		}
 	}
 
@@ -49,20 +41,31 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		view.addSubview(left)
 		view.addSubview(right)
 
-		lifetime += [Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true, block: { _ in
+		let setImage = { left.image = $0; right.image = $0 }
+		let proxy = ActionTrampoline<CADisplayLink> { [weak self, setImage] _ in
 			let ft = unit.ft()
-			self.state.offset = Float(ft.rowOffset) / Float(ft.rows)
+			self?.state.offset = Float(ft.rowOffset) / Float(ft.rows)
 			let image = UIImage.grayscaleImage(withData: ft.data, width: ft.cols, height: ft.rows)
-			left.image = image
-			right.image = image
-			log[idx] = ft.rowOffset
-			idx = (idx + 1) % 64
-		})]
+			setImage(image)
+		}
+		let displayLink = CADisplayLink(target: proxy, selector: proxy.selector)
+		displayLink.add(to: .main, forMode: .common)
+
+		lifetime += [
+			proxy,
+			Auto(displayLink.invalidate)
+		]
 
 		addGestures()
 	}
 
 	private func addGestures() {
+		var v = state.speed
+		var dV = 0 as Float
+		var speed: Float {
+			get { min(max(v + dV, 0), 4) }
+			set { v = min(max(newValue, 0), 4); dV = 0 }
+		}
 
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
@@ -71,34 +74,49 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		))
 		view.addGestureRecognizer(UITapGestureRecognizer(
 			handler: { [weak self] _ in
-				self?.state.stopped.toggle()
-				self?.state.speed = 1
+				speed = speed == 1 ? 0 : 1
+				self?.state.speed = speed
 			},
 			setupDelegate: { rec, delegate in
 				rec.numberOfTouchesRequired = 2
 			}
 		))
-		view.addGestureRecognizer(UITapGestureRecognizer(
-			handler: { [weak self] _ in self?.state.speed = self?.state.speed == 1 ? 2 : 1 },
-			setupDelegate: { rec, delegate in
-				rec.numberOfTouchesRequired = 3
-			}
-		))
 		view.addGestureRecognizer(UIPanGestureRecognizer(
 			handler: { [weak self] recognizer in
 				guard let self, let view = recognizer.view else { return }
-
-				let translation = -recognizer.translation(in: view).y
+				let translation = -Float(recognizer.translation(in: view).y)
 
 				switch recognizer.state {
-				case .began: state.dragged = true
-				case .changed: state.dSpeed = Float(translation) / 256
+				case .began:
+					state.dragged = true
+				case .changed:
+					dV = translation / 256
+					state.speed = speed
 				case .cancelled, .ended:
 					state.dragged = false
-					state.dSpeed = 0
+					speed = v + dV
 				default: break
 				}
 			}
 		))
+	}
+}
+
+let parameterSpecs = ParameterTreeSpec {
+	ParameterGroupSpec(identifier: "base", name: "Base") {
+		ParameterSpec(
+			address: .hold,
+			identifier: "hold",
+			name: "Hold",
+			units: .boolean,
+			valueRange: 0.0...1.0
+		)
+		ParameterSpec(
+			address: .speed,
+			identifier: "speed",
+			name: "Speed",
+			units: .rate,
+			valueRange: 0.25...4
+		)
 	}
 }

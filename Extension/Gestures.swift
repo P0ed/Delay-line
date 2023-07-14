@@ -69,3 +69,14 @@ extension NSObject {
 		set { objc_setAssociatedObject(self, &Self.lifetimeKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
 	}
 }
+
+final class Auto {
+	private let dealloc: () -> Void
+
+	init(_ dealloc: @escaping () -> Void) {
+		self.dealloc = dealloc
+	}
+	deinit {
+		dealloc()
+	}
+}
