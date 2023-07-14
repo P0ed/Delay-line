@@ -7,7 +7,7 @@ final class Model: ObservableObject {
 	private var unit: AVAudioUnit?
 	private var engine: AVAudioEngine?
 
-	@Published private(set) var state: Result<UIViewController, String> = .failure("No Audio Unit loaded..")
+	@Published private(set) var state: Result<UIViewController, String> = .failure("")
 
     init() {
 		instantiate()
@@ -34,15 +34,12 @@ final class Model: ObservableObject {
 		do {
 			let session = AVAudioSession.sharedInstance()
 			try session.setCategory(.multiRoute, mode: .default)
-//			try session.setPreferredSampleRate(96000)
+			try session.setPreferredSampleRate(48000)
 			try session.setActive(true)
 
 			try session.availableInputs?.forEach { i in
 				if i.portType == .usbAudio { try session.setPreferredInput(i) }
 			}
-
-//			try session.setPreferredInputNumberOfChannels(1)
-//			try session.setPreferredOutputNumberOfChannels(2)
 
 			let engine = AVAudioEngine()
 			engine.attach(unit)

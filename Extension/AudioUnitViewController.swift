@@ -97,15 +97,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		stack.addArrangedSubview(UIImageView())
 		stack.addArrangedSubview(transport)
 		stack.alpha = state.controlsHidden ? 0 : 1
-		setHidden = { isHidden in
-			UIView.animate(
-				withDuration: 0.1,
-				delay: 0,
-				options: .beginFromCurrentState,
-				animations: { stack.alpha = isHidden ? 0 : 1 },
-				completion: { _ in }
-			)
-		}
+		setHidden = stack.setHiddenAnimated
 	}
 
 	private func addGestures() {
@@ -135,24 +127,5 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				}
 			}
 		))
-	}
-}
-
-let parameterSpecs = ParameterTreeSpec {
-	ParameterGroupSpec(identifier: "base", name: "Base") {
-		ParameterSpec(
-			address: .hold,
-			identifier: "hold",
-			name: "Hold",
-			units: .boolean,
-			valueRange: 0.0...1.0
-		)
-		ParameterSpec(
-			address: .speed,
-			identifier: "speed",
-			name: "Speed",
-			units: .rate,
-			valueRange: 0.25...4
-		)
 	}
 }

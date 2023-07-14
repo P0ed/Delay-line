@@ -26,3 +26,15 @@ final class Button: UIButton {
 }
 
 private let commit = UIImpactFeedbackGenerator(style: .heavy)
+
+extension UIView {
+
+	func setHiddenAnimated(_ isHidden: Bool) {
+		UIView.animate(
+			withDuration: 0.1,
+			delay: 0,
+			options: .beginFromCurrentState,
+			animations: { self.alpha = isHidden ? 0 : 1 }
+		)
+	}
+}
