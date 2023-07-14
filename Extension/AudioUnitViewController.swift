@@ -7,17 +7,21 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 
 	struct State {
 		var holds = false
-		var dragged = false
 		var stopped = false
 		var speed = 1 as Float
 		var offset = 0 as Float
+		var controlsHidden = true
 	}
 
+	private var setHidden: (Bool) -> Void = { _ in }
 	private var setValue: (ParameterAddress, AUValue) -> Void = { _, _ in }
 	private var state = State() {
 		didSet {
+			let spd = state.stopped ? 0 : state.speed
+			let oldSpd = oldValue.stopped ? 0 : oldValue.speed
 			if state.holds != oldValue.holds { setValue(.hold, state.holds ? 1 : 0) }
-			if state.speed != oldValue.speed { setValue(.speed, state.speed) }
+			if spd != oldSpd { setValue(.speed, spd) }
+			if state.controlsHidden != oldValue.controlsHidden { setHidden(state.controlsHidden) }
 		}
 	}
 
@@ -57,6 +61,51 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		]
 
 		addGestures()
+		addButtons()
+	}
+
+	private func addButtons() {
+		let spacing = 32 as CGFloat
+		let stack = UIStackView(frame: view.bounds.insetBy(dx: spacing, dy: spacing + 20))
+		stack.distribution = .fillEqually
+		stack.spacing = spacing
+		view.addSubview(stack)
+
+		let vstack = {
+			let stack = UIStackView(arrangedSubviews: $0)
+			stack.distribution = .fillEqually
+			stack.axis = .vertical
+			stack.spacing = spacing
+			return stack
+		}
+
+		let speed = vstack([
+			Button { [weak self] in self?.state.speed = 0.5 },
+			Button { [weak self] in self?.state.speed = 1 },
+			Button { [weak self] in self?.state.speed = 1.5 },
+			Button { [weak self] in self?.state.speed = 2 }
+		])
+		let transport = vstack([
+			Button { [weak self] in self?.state.holds.toggle() },
+			UIImageView(),
+			UIImageView(),
+			Button { [weak self] in self?.state.stopped.toggle() }
+		])
+
+		stack.addArrangedSubview(speed)
+		stack.addArrangedSubview(UIImageView())
+		stack.addArrangedSubview(UIImageView())
+		stack.addArrangedSubview(transport)
+		stack.alpha = state.controlsHidden ? 0 : 1
+		setHidden = { isHidden in
+			UIView.animate(
+				withDuration: 0.1,
+				delay: 0,
+				options: .beginFromCurrentState,
+				animations: { stack.alpha = isHidden ? 0 : 1 },
+				completion: { _ in }
+			)
+		}
 	}
 
 	private func addGestures() {
@@ -68,18 +117,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		}
 
 		view.addGestureRecognizer(UITapGestureRecognizer(
-			handler: { [weak self] _ in
-				self?.state.holds.toggle()
-			}
-		))
-		view.addGestureRecognizer(UITapGestureRecognizer(
-			handler: { [weak self] _ in
-				speed = speed == 1 ? 0 : 1
-				self?.state.speed = speed
-			},
-			setupDelegate: { rec, delegate in
-				rec.numberOfTouchesRequired = 2
-			}
+			handler: { [weak self] _ in self?.state.controlsHidden.toggle() }
 		))
 		view.addGestureRecognizer(UIPanGestureRecognizer(
 			handler: { [weak self] recognizer in
@@ -87,13 +125,11 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 				let translation = -Float(recognizer.translation(in: view).y)
 
 				switch recognizer.state {
-				case .began:
-					state.dragged = true
+				case .began: break
 				case .changed:
 					dV = translation / 256
 					state.speed = speed
 				case .cancelled, .ended:
-					state.dragged = false
 					speed = v + dV
 				default: break
 				}

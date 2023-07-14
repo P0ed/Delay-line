@@ -96,7 +96,7 @@ public:
 		}
 
 		updateFT(lineCnt);
-		if (hold) renderClock(clock, cnt, lineCnt);
+		renderClock(clock, cnt, lineCnt);
 		line.move(lineCnt);
 
 		ftOffset = line.offset * ftHeight / line.length;

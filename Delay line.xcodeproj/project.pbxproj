@@ -10,6 +10,7 @@
 		5F13CA702A6145B600069656 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F13CA6D2A6145B600069656 /* AudioToolbox.framework */; };
 		5F13CA712A6145B600069656 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F13CA6E2A6145B600069656 /* CoreAudioKit.framework */; };
 		5F13CA742A6145BB00069656 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F13CA732A6145BB00069656 /* AVFoundation.framework */; };
+		5F13CADF2A61A8D900069656 /* Button.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F13CADE2A61A8D900069656 /* Button.swift */; };
 		5F2D2DEE2A4DACBB00125390 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DED2A4DACBB00125390 /* Model.swift */; };
 		5F2D2DF22A4DACBB00125390 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2DF12A4DACBB00125390 /* App.swift */; };
 		5F2D2DF42A4DACBD00125390 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5F2D2DF32A4DACBD00125390 /* Assets.xcassets */; };
@@ -56,6 +57,7 @@
 		5F13CA6E2A6145B600069656 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
 		5F13CA6F2A6145B600069656 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		5F13CA732A6145BB00069656 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		5F13CADE2A61A8D900069656 /* Button.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Button.swift; sourceTree = "<group>"; };
 		5F2D2DD62A4DACBB00125390 /* Delay line.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Delay line.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F2D2DED2A4DACBB00125390 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		5F2D2DF12A4DACBB00125390 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 			children = (
 				5F2D2E1F2A4DACBD00125390 /* AudioUnitViewController.swift */,
 				5FD81BD82A5899F000BD80F6 /* Gestures.swift */,
+				5F13CADE2A61A8D900069656 /* Button.swift */,
 				5F090EC42A57538E00DD29B8 /* Renderer.h */,
 				5F090EC62A57538E00DD29B8 /* Renderer.m */,
 				5F2D2E0F2A4DACBD00125390 /* DelayUnit.h */,
@@ -278,6 +281,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5FD81B682A58442800BD80F6 /* Renderer.m in Sources */,
+				5F13CADF2A61A8D900069656 /* Button.swift in Sources */,
 				5FD81BD92A5899F000BD80F6 /* Gestures.swift in Sources */,
 				5F2D2E112A4DACBD00125390 /* DelayUnit.mm in Sources */,
 				5F2D2E082A4DACBD00125390 /* ParameterSpec.swift in Sources */,
