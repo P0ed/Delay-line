@@ -72,11 +72,6 @@ extension NSObject {
 
 final class Auto {
 	private let dealloc: () -> Void
-
-	init(_ dealloc: @escaping () -> Void) {
-		self.dealloc = dealloc
-	}
-	deinit {
-		dealloc()
-	}
+	init(_ dealloc: @escaping () -> Void) { self.dealloc = dealloc }
+	deinit { dealloc() }
 }

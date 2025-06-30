@@ -9,21 +9,21 @@
 
 static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
 
-const int maxFrames = 1024;
+const int maxFrames = 4096;
 const int ftWidth = 256;
 const int ftHeight = 1024;
 
 struct DSPKernel {
 public:
-	char *ft;
+	char ft[ftHeight * ftWidth];
 	int ftOffset = 0;
 private:
 	Buffer line = Buffer();
-	float *ax, *bx, *cx, *dx;
+	float ax[maxFrames], bx[maxFrames], cx[maxFrames], dx[maxFrames];
 
-	float *rms;
-	float *ftWindow;
-	char *ftDirty;
+	float rms[ftHeight];
+	float ftWindow[ftWidth * 4];
+	char ftDirty[ftHeight];
 	vDSP_DFT_Setup ftSetup = NULL;
 	double sampleRate = 48000;
 
@@ -33,27 +33,18 @@ private:
 public:
 	void initialize(int inputChannelCount, int outputChannelCount, double samplesPerSecond) {
 		sampleRate = samplesPerSecond;
-		line = Buffer(samplesPerSecond * 1);
+		vDSP_vclr(ax, 1, maxFrames);
+		vDSP_vclr(bx, 1, maxFrames);
+		vDSP_vclr(cx, 1, maxFrames);
+		vDSP_vclr(dx, 1, maxFrames);
+		vDSP_vclr(rms, 1, ftHeight);
+		memset(ft, 0, sizeof(ft));
+		memset(ftDirty, 0, sizeof(ftDirty));
 
-		ax = new float[maxFrames * 4 * 4];
-		bx = ax + maxFrames * 4;
-		cx = bx + maxFrames * 4;
-		dx = cx + maxFrames * 4;
-
-		ft = new char[ftHeight * ftWidth];
-		rms = new float[ftHeight];
-		ftWindow = new float[ftWidth * 4];
 		vDSP_hann_window(ftWindow, ftWidth * 4, 0);
-		ftDirty = new char[ftHeight];
 		ftSetup = vDSP_DFT_zrop_CreateSetup(NULL, ftWidth * 4, vDSP_DFT_FORWARD);
 	}
 	void deInitialize() {
-		delete[] line.data;
-		delete[] ax;
-		delete[] ft;
-		delete[] rms;
-		delete[] ftWindow;
-		delete[] ftDirty;
 		vDSP_DFT_DestroySetup(ftSetup);
 	}
 
@@ -71,7 +62,7 @@ public:
 		}
 	}
 
-	void process(const float *in, float *out, float *clock, AUEventSampleTime startTime, int cnt) {
+	void process(const float *in, float *out, AUEventSampleTime startTime, int cnt) {
 		speed += (targetSpeed - speed) * cnt / sampleRate * 4;
 		if (abs(targetSpeed - speed) < 0.02) speed = targetSpeed;
 		speed = fmin(fmax(speed, 0), 4);
@@ -96,7 +87,6 @@ public:
 		}
 
 		updateFT(lineCnt);
-		renderClock(clock, cnt, lineCnt);
 		line.move(lineCnt);
 
 		ftOffset = line.offset * ftHeight / line.length;
@@ -132,12 +122,5 @@ private:
 		}
 
 		os_unfair_lock_unlock(&lock);
-	}
-
-	void renderClock(float *clock, int cnt, int lineCnt) {
-		for (int i = 0; i < cnt; ++i) {
-			int idx = line.offset + i * float(lineCnt - 1) / float(cnt - 1);
-			clock[i] = idx / (line.length / 16) % 2 ? 0 : 1;
-		}
 	}
 };

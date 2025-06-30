@@ -1,12 +1,9 @@
 import CoreMIDI
 import SwiftUI
 
-@main
-final class App: SwiftUI.App {
-    @ObservedObject var model = Model()
+let model = Model()
 
-    required init() {}
-
+@main struct App: SwiftUI.App {
     var body: some Scene {
         WindowGroup {
 			ContentView(model: model)

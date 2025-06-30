@@ -15,7 +15,7 @@ final class Button: UIButton {
 
 	convenience init(action: @escaping () -> Void) {
 		self.init(primaryAction: UIAction(handler: { _ in
-			commit.impactOccurred(intensity: 1)
+			UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
 			action()
 		}))
 		layer.cornerRadius = 8
@@ -24,8 +24,6 @@ final class Button: UIButton {
 		isHighlightedDidSet = { $0.backgroundColor = $1 ? .buttonHighlighted : .buttonNormal }
 	}
 }
-
-private let commit = UIImpactFeedbackGenerator(style: .heavy)
 
 extension UIView {
 

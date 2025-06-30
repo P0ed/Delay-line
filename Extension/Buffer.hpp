@@ -1,13 +1,9 @@
 struct Buffer {
-	float *data = nullptr;
-	int length = 0;
+	float data[48000];
+	int length = 48000;
 	int offset = 0;
 
-	Buffer(int len = 0) {
-		data = len ? new float[len] : nullptr;
-		length = len;
-		offset = 0;
-	}
+	Buffer() {}
 
 	float & operator[](int index) { return data[(offset + index) % length]; }
 

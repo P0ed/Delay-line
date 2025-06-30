@@ -10,13 +10,13 @@ final class Model: ObservableObject {
 	@Published private(set) var state: Result<UIViewController, String> = .failure("")
 
     init() {
-		instantiate()
-	}
-
-	private func instantiate() {
 		let lookup = { AVAudioUnitComponentManager.shared().components(matching: .delayLine).first }
 		let assign = { result in DispatchQueue.main.async { self.state = result } }
-		guard lookup() != nil else { return assign(.failure("Failed to find component")) }
+
+		guard lookup() != nil else {
+			assign(.failure("Failed to find component"))
+			return
+		}
 
 		AVAudioUnit.instantiate(with: .delayLine, options: .loadOutOfProcess) { unit, error in
 			guard let unit, error == nil else { return assign(.failure(error?.localizedDescription ?? "Unknown error")) }
@@ -48,7 +48,6 @@ final class Model: ObservableObject {
 
 			try engine.start()
 			self.engine = engine
-
 		} catch {
 			print(error)
 		}
@@ -74,4 +73,4 @@ extension String {
 	}
 }
 
-extension String: Error {}
+extension String: Swift.Error {}

@@ -18,12 +18,9 @@
 
 @implementation DelayUnit {
 	DSPKernel _kernel;
-//	char _uiData[ftHeight * ftWidth];
-//	float _buffer[maxFrames];
+	char _uiData[ftHeight * ftWidth];
+	float _buffer[maxFrames];
 }
-
-char _uiData[ftHeight * ftWidth];
-float _buffer[maxFrames];
 
 @synthesize parameterTree = _parameterTree;
 
@@ -47,6 +44,8 @@ float _buffer[maxFrames];
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
 	if (!self) return nil;
+
+	memset(_buffer, 0, sizeof(_buffer));
 
 	auto const inFmt = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:1];
 	_inputBus = [AUAudioUnitBus.alloc initWithFormat:inFmt error:nil];
@@ -104,7 +103,6 @@ float _buffer[maxFrames];
 	[super deallocateRenderResources];
 }
 
-#pragma mark - AUAudioUnit (AUAudioUnitImplementation)
 - (AUInternalRenderBlock)internalRenderBlock {
 	__block DSPKernel *kernel = &_kernel;
 	__block float *buffer = _buffer;
@@ -131,7 +129,6 @@ float _buffer[maxFrames];
 		AUEventSampleTime now = AUEventSampleTime(timestamp->mSampleTime);
 		kernel->process((float *)input.mBuffers[0].mData,
 						(float *)outputData->mBuffers[0].mData,
-						(float *)outputData->mBuffers[1].mData,
 						now,
 						frameCount);
 

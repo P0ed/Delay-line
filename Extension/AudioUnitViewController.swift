@@ -10,7 +10,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		var stopped = false
 		var speed = 1 as Float
 		var offset = 0 as Float
-		var controlsHidden = true
+		var controlsHidden = false
 	}
 
 	private var setHidden: (Bool) -> Void = { _ in }
@@ -28,7 +28,9 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 	@objc public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
 		let unit = try DelayUnit(componentDescription: componentDescription, options: [])
 		setValue = { unit.parameterTree?.parameter(withAddress: $0.rawValue)?.value = $1 }
-		DispatchQueue.main.async { self.setupUI(unit: unit) }
+		DispatchQueue.main.async {
+			self.setupUI(unit: unit)
+		}
 		return unit
 	}
 
@@ -82,12 +84,10 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		let speed = vstack([
 			Button { [weak self] in self?.state.speed = 0.5 },
 			Button { [weak self] in self?.state.speed = 1 },
-			Button { [weak self] in self?.state.speed = 1.5 },
 			Button { [weak self] in self?.state.speed = 2 }
 		])
 		let transport = vstack([
 			Button { [weak self] in self?.state.holds.toggle() },
-			UIImageView(),
 			UIImageView(),
 			Button { [weak self] in self?.state.stopped.toggle() }
 		])
