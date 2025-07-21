@@ -18,7 +18,7 @@
 
 @implementation DelayUnit {
 	DSPKernel _kernel;
-	char _uiData[ftHeight * ftWidth];
+	uint8_t _uiData[ftHeight * ftWidth];
 	float _buffer[maxFrames];
 }
 
@@ -26,26 +26,22 @@
 
 - (UIFT)ft {
 	os_unfair_lock_lock(&lock);
-	int offset = abs(_kernel.ftOffset) % ftHeight;
-
-	char *ft = _kernel.ft;
-	if (ft) for (int i = 0; i < ftHeight; ++i) for (int j = 0; j < ftWidth; ++j)
+	int offset = _kernel.ftOffset % ftHeight;
+	uint8_t *ft = _kernel.ft;
+	for (int i = 0; i < ftHeight; ++i) for (int j = 0; j < ftWidth; ++j)
 		_uiData[i * ftWidth + j] = ft[((i + offset) % ftHeight) * ftWidth + j];
 	os_unfair_lock_unlock(&lock);
 
 	return (UIFT){
 		.data = _uiData,
 		.rows = ftHeight,
-		.cols = ftWidth,
-		.rowOffset = offset
+		.cols = ftWidth
 	};
 }
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
 	self = [super initWithComponentDescription:componentDescription options:options error:outError];
 	if (!self) return nil;
-
-	memset(_buffer, 0, sizeof(_buffer));
 
 	auto const inFmt = [AVAudioFormat.alloc initStandardFormatWithSampleRate:48000 channels:1];
 	_inputBus = [AUAudioUnitBus.alloc initWithFormat:inFmt error:nil];
@@ -82,10 +78,9 @@
 	};
 }
 
-#pragma mark - AUAudioUnit Overrides
+// MARK: AUAudioUnit Overrides
 - (AUAudioFrameCount)maximumFramesToRender { return maxFrames; }
 - (void)setMaximumFramesToRender:(AUAudioFrameCount)maximumFramesToRender {}
-
 - (AUAudioUnitBusArray *)inputBusses { return _inputBusArray; }
 - (AUAudioUnitBusArray *)outputBusses { return _outputBusArray; }
 

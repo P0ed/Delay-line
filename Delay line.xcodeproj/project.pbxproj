@@ -17,7 +17,6 @@
 		5F2D2DFE2A4DACBD00125390 /* Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5F2D2DFD2A4DACBD00125390 /* Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5F2D2E082A4DACBD00125390 /* ParameterSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2E072A4DACBD00125390 /* ParameterSpec.swift */; };
 		5F2D2E112A4DACBD00125390 /* DelayUnit.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2E102A4DACBD00125390 /* DelayUnit.mm */; };
-		5F2D2E162A4DACBD00125390 /* Buffer.hpp in Resources */ = {isa = PBXBuildFile; fileRef = 5F2D2E152A4DACBD00125390 /* Buffer.hpp */; };
 		5F2D2E1D2A4DACBD00125390 /* DSPKernel.hpp in Resources */ = {isa = PBXBuildFile; fileRef = 5F2D2E1C2A4DACBD00125390 /* DSPKernel.hpp */; };
 		5F2D2E202A4DACBD00125390 /* AudioUnitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2D2E1F2A4DACBD00125390 /* AudioUnitViewController.swift */; };
 		5FD81B682A58442800BD80F6 /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 5F090EC62A57538E00DD29B8 /* Renderer.m */; };
@@ -68,7 +67,6 @@
 		5F2D2E072A4DACBD00125390 /* ParameterSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParameterSpec.swift; sourceTree = "<group>"; };
 		5F2D2E0F2A4DACBD00125390 /* DelayUnit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DelayUnit.h; sourceTree = "<group>"; };
 		5F2D2E102A4DACBD00125390 /* DelayUnit.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = DelayUnit.mm; sourceTree = "<group>"; };
-		5F2D2E152A4DACBD00125390 /* Buffer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Buffer.hpp; sourceTree = "<group>"; };
 		5F2D2E182A4DACBD00125390 /* ParameterAddresses.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ParameterAddresses.h; sourceTree = "<group>"; };
 		5F2D2E1C2A4DACBD00125390 /* DSPKernel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DSPKernel.hpp; sourceTree = "<group>"; };
 		5F2D2E1F2A4DACBD00125390 /* AudioUnitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUnitViewController.swift; sourceTree = "<group>"; };
@@ -143,7 +141,6 @@
 				5F2D2E0F2A4DACBD00125390 /* DelayUnit.h */,
 				5F2D2E102A4DACBD00125390 /* DelayUnit.mm */,
 				5F2D2E1C2A4DACBD00125390 /* DSPKernel.hpp */,
-				5F2D2E152A4DACBD00125390 /* Buffer.hpp */,
 				5F2D2E182A4DACBD00125390 /* ParameterAddresses.h */,
 				5F2D2E072A4DACBD00125390 /* ParameterSpec.swift */,
 				5F2D2E052A4DACBD00125390 /* Bridging-Header.h */,
@@ -260,7 +257,6 @@
 			files = (
 				5FD81B6B2A5847D700BD80F6 /* MainInterface.storyboard in Resources */,
 				5F2D2E1D2A4DACBD00125390 /* DSPKernel.hpp in Resources */,
-				5F2D2E162A4DACBD00125390 /* Buffer.hpp in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

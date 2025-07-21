@@ -47,12 +47,11 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		view.addSubview(left)
 		view.addSubview(right)
 
-		let setImage = { left.image = $0; right.image = $0 }
-		let proxy = ActionTrampoline<CADisplayLink> { [weak self, setImage] _ in
+		let proxy = ActionTrampoline<CADisplayLink> { _ in
 			let ft = unit.ft()
-			self?.state.offset = Float(ft.rowOffset) / Float(ft.rows)
 			let image = UIImage.grayscaleImage(withData: ft.data, width: ft.cols, height: ft.rows)
-			setImage(image)
+			left.image = image
+			right.image = image
 		}
 		let displayLink = CADisplayLink(target: proxy, selector: proxy.selector)
 		displayLink.add(to: .main, forMode: .common)
@@ -82,12 +81,16 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		}
 
 		let speed = vstack([
+			Button { [weak self] in self?.state.speed = 1.0 / 3.0 },
 			Button { [weak self] in self?.state.speed = 0.5 },
 			Button { [weak self] in self?.state.speed = 1 },
+			Button { [weak self] in self?.state.speed = 1.5 },
 			Button { [weak self] in self?.state.speed = 2 }
 		])
 		let transport = vstack([
 			Button { [weak self] in self?.state.holds.toggle() },
+			UIImageView(),
+			UIImageView(),
 			UIImageView(),
 			Button { [weak self] in self?.state.stopped.toggle() }
 		])
@@ -109,7 +112,12 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 		}
 
 		view.addGestureRecognizer(UITapGestureRecognizer(
-			handler: { [weak self] _ in self?.state.controlsHidden.toggle() }
+			handler: { [weak self] _ in self?.state.stopped.toggle() }
+		))
+		view.addGestureRecognizer(UILongPressGestureRecognizer(
+			handler: { [weak self] r in
+				r.state == .began ? self?.state.controlsHidden.toggle() : ()
+			}
 		))
 		view.addGestureRecognizer(UIPanGestureRecognizer(
 			handler: { [weak self] recognizer in

@@ -1,26 +1,39 @@
 #pragma once
-
 #import <AudioToolbox/AudioToolbox.h>
 #import <Accelerate/Accelerate.h>
 #import <os/lock.h>
-
 #import "ParameterAddresses.h"
-#import "Buffer.hpp"
 
 static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
 
 const int maxFrames = 4096;
 const int ftWidth = 256;
-const int ftHeight = 1024;
+const int ftHeight = 2048;
+
+struct Buffer {
+	float data[48000];
+	const int length = 48000;
+	int offset = 0;
+	Buffer() {}
+
+	float & operator[](int index) { return data[(offset + index) % length]; }
+	void move(int dx) { offset = (offset + dx) % length; }
+
+	void read(float *data, int length) {
+		for (int i = 0; i < length; ++i) data[i] = (*this)[i];
+	}
+	void write(const float *data, int length) {
+		for (int i = 0; i < length; ++i) (*this)[i] = data[i];
+	}
+};
 
 struct DSPKernel {
 public:
-	char ft[ftHeight * ftWidth];
+	uint8_t ft[ftHeight * ftWidth];
 	int ftOffset = 0;
 private:
 	Buffer line = Buffer();
 	float ax[maxFrames], bx[maxFrames], cx[maxFrames], dx[maxFrames];
-
 	float rms[ftHeight];
 	float ftWindow[ftWidth * 4];
 	char ftDirty[ftHeight];
@@ -38,9 +51,8 @@ public:
 		vDSP_vclr(cx, 1, maxFrames);
 		vDSP_vclr(dx, 1, maxFrames);
 		vDSP_vclr(rms, 1, ftHeight);
-		memset(ft, 0, sizeof(ft));
-		memset(ftDirty, 0, sizeof(ftDirty));
-
+		memset(ft, 0, ftHeight * ftWidth);
+		memset(ftDirty, 0, ftHeight);
 		vDSP_hann_window(ftWindow, ftWidth * 4, 0);
 		ftSetup = vDSP_DFT_zrop_CreateSetup(NULL, ftWidth * 4, vDSP_DFT_FORWARD);
 	}

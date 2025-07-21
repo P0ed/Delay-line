@@ -35,11 +35,10 @@ final class Model: ObservableObject {
 			let session = AVAudioSession.sharedInstance()
 			try session.setCategory(.multiRoute, mode: .default)
 			try session.setPreferredSampleRate(48000)
-			try session.setActive(true)
-
 			try session.availableInputs?.forEach { i in
-				if i.portType == .usbAudio { try session.setPreferredInput(i) }
+				if i.portType == .builtInMic { try session.setPreferredInput(i) }
 			}
+			try session.setActive(true)
 
 			let engine = AVAudioEngine()
 			engine.attach(unit)
