@@ -18,24 +18,20 @@
 
 @implementation DelayUnit {
 	DSPCore _core;
-	uint8_t _uiData[FTHeight * FTWidth];
+	uint8_t _uiData[UIFTHeight * UIFTWidth];
 }
 
 @synthesize parameterTree = _parameterTree;
 
 - (UIFT)ft {
 	os_unfair_lock_lock(&lock);
-	int offset = _core.ftOffset % FTHeight;
+	int offset = _core.ftHead % UIFTHeight;
 	uint8_t *ft = _core.ft;
-	for (int i = 0; i < FTHeight; ++i) for (int j = 0; j < FTWidth; ++j)
-		_uiData[i * FTWidth + j] = ft[((i + offset) % FTHeight) * FTWidth + j];
+	for (int i = 0; i < UIFTHeight; ++i) for (int j = 0; j < UIFTWidth; ++j)
+		_uiData[i * UIFTWidth + j] = ft[((i + offset) % UIFTHeight) * UIFTWidth + j];
 	os_unfair_lock_unlock(&lock);
 
-	return (UIFT){
-		.data = _uiData,
-		.rows = FTHeight,
-		.cols = FTWidth
-	};
+	return (UIFT){.data = _uiData};
 }
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
@@ -78,9 +74,7 @@
 - (AUAudioUnitBusArray *)outputBusses { return _outputBusArray; }
 
 - (BOOL)allocateRenderResourcesAndReturnError:(NSError **)outError {
-	const uint32_t inputChannelCount = _inputBus.format.channelCount;
-	const uint32_t outputChannelCount = _outputBus.format.channelCount;
-	DSPCoreInit(&_core, inputChannelCount, outputChannelCount, _outputBus.format.sampleRate);
+	DSPCoreInit(&_core, _outputBus.format.sampleRate);
 
 	for (AUParameter *param in _parameterTree.allParameters) {
 		param.value = DSPCoreGetParameter(&_core, param.address);

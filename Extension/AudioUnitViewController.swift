@@ -42,14 +42,13 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 			view.transform = .identity.scaledBy(x: $0, y: 1)
 			return view
 		}
-		let left = img(-1)
-		let right = img(1)
+		let left = img(1)
+		let right = img(-1)
 		view.addSubview(left)
 		view.addSubview(right)
 
 		let proxy = ActionTrampoline<CADisplayLink> { _ in
-			let ft = unit.ft()
-			let image = UIImageGrayscaleImageWithData(ft.data, ft.cols, ft.rows)
+			let image = UIImage(ft: unit.ft())
 			left.image = image
 			right.image = image
 		}
