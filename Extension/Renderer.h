@@ -1,7 +1,18 @@
 #import <UIKit/UIKit.h>
+#import <CoreGraphics/CoreGraphics.h>
 
-@interface UIImage (Renderer)
+static UIImage *UIImageGrayscaleImageWithData(const char *data, int width, int height) {
+	CGColorSpaceRef color = CGColorSpaceCreateDeviceGray();
+	CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, data, width * height, NULL);
 
-+ (UIImage *_Nonnull)grayscaleImageWithData:(const char * _Nonnull)data width:(int)width height:(int)height;
+	CGImageRef img = CGImageCreate(width, height, 8, 8, width, color, kCGBitmapByteOrderDefault | kCGImageAlphaNone, provider, NULL, false, kCGRenderingIntentDefault);
 
-@end
+	CGDataProviderRelease(provider);
+	CGColorSpaceRelease(color);
+
+	UIImage *image = [UIImage imageWithCGImage:img];
+	CGImageRelease(img);
+
+	return image;
+}
+

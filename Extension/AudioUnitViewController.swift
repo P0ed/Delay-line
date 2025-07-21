@@ -49,7 +49,7 @@ final class AudioUnitViewController: AUViewController, AUAudioUnitFactory {
 
 		let proxy = ActionTrampoline<CADisplayLink> { _ in
 			let ft = unit.ft()
-			let image = UIImage.grayscaleImage(withData: ft.data, width: ft.cols, height: ft.rows)
+			let image = UIImageGrayscaleImageWithData(ft.data, ft.cols, ft.rows)
 			left.image = image
 			right.image = image
 		}
